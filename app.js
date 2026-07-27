@@ -20,7 +20,7 @@ const CATEGORIES = {
 };
 
 // Default Tags
-const DEFAULT_TAGS = ["Family", "Work", "Travel", "Dining Out", "Hospital", "Study", "Groceries", "Leisure"];
+const DEFAULT_TAGS = ["Family", "Work", "Travel", "Dining Out", "Hospital", "Study", "Groceries", "Leisure", "Fateh", "Coffee", "Personal"];
 
 // Application State
 let state = {
