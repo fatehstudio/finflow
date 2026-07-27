@@ -81,6 +81,8 @@ const elements = {
   valMonthlySavings: document.getElementById("val-monthly-savings"),
   valMonthlyInvestments: document.getElementById("val-monthly-investments"),
   lblExpenseTotal: document.getElementById("lbl-expense-total"),
+  dashStartDate: document.getElementById("dash-start-date"),
+  dashEndDate: document.getElementById("dash-end-date"),
   
   // History View Elements
   historySearch: document.getElementById("history-search"),
@@ -111,6 +113,16 @@ document.addEventListener("DOMContentLoaded", () => {
   
   // Default values
   elements.txDate.value = new Date().toISOString().split("T")[0];
+  
+  const now = new Date();
+  const yyyy = now.getFullYear();
+  const mm = String(now.getMonth() + 1).padStart(2, '0');
+  const lastDay = new Date(yyyy, now.getMonth() + 1, 0).getDate();
+  elements.dashStartDate.value = `${yyyy}-${mm}-01`;
+  elements.dashEndDate.value = `${yyyy}-${mm}-${String(lastDay).padStart(2, '0')}`;
+  
+  elements.dashStartDate.addEventListener("change", renderDashboard);
+  elements.dashEndDate.addEventListener("change", renderDashboard);
   
   // Start up sync
   if (state.settings.apiUrl) {
@@ -566,17 +578,17 @@ function updateUI() {
 // View Render: Home / Dashboard View
 // -------------------------------------------------------------
 function renderDashboard() {
-  const curMonthStr = new Date().toISOString().substring(0, 7); // "YYYY-MM"
+  const startDate = elements.dashStartDate.value;
+  const endDate = elements.dashEndDate.value;
   
   let incomeTotal = 0;
   let expenseTotal = 0;
   let savingsTotal = 0;
   let investmentTotal = 0;
   
-  // Calculate dashboard totals for current month
+  // Calculate dashboard totals for selected date range
   state.transactions.forEach(tx => {
-    // Only current month transactions
-    if (tx.Date.startsWith(curMonthStr)) {
+    if (tx.Date >= startDate && tx.Date <= endDate) {
       const amt = parseFloat(tx.Amount) || 0;
       if (tx.Type === "Income") incomeTotal += amt;
       else if (tx.Type === "Expense") expenseTotal += amt;
@@ -595,11 +607,11 @@ function renderDashboard() {
   elements.lblExpenseTotal.textContent = `Total: ${formatCurrency(expenseTotal)}`;
   
   // Render charts
-  renderExpenseCategoryChart(curMonthStr);
+  renderExpenseCategoryChart(startDate, endDate);
   renderCashFlowTrendChart();
 }
 
-function renderExpenseCategoryChart(monthStr) {
+function renderExpenseCategoryChart(startDate, endDate) {
   const canvas = document.getElementById("chart-expenses-category");
   if (!canvas) return;
   
@@ -608,12 +620,12 @@ function renderExpenseCategoryChart(monthStr) {
     state.chartInstances.expenses.destroy();
   }
   
-  // Group current month expenses by category
+  // Group expenses by category
   const expenseGroups = {};
   CATEGORIES.Expense.forEach(cat => { expenseGroups[cat] = 0; });
   
   state.transactions.forEach(tx => {
-    if (tx.Type === "Expense" && tx.Date.startsWith(monthStr)) {
+    if (tx.Type === "Expense" && tx.Date >= startDate && tx.Date <= endDate) {
       const amt = parseFloat(tx.Amount) || 0;
       expenseGroups[tx.Category] = (expenseGroups[tx.Category] || 0) + amt;
     }
@@ -1218,6 +1230,8 @@ function showToast(msg) {
 
 window.downloadChartImage = function() {
   const canvas = document.getElementById("chart-expenses-category");
+  const startDate = elements.dashStartDate.value;
+  const endDate = elements.dashEndDate.value;
   if (canvas) {
     // Render onto temporary canvas to apply a solid white background (preventing transparent black in default viewers)
     const tempCanvas = document.createElement("canvas");
@@ -1232,7 +1246,7 @@ window.downloadChartImage = function() {
     const url = tempCanvas.toDataURL("image/png");
     const a = document.createElement("a");
     a.href = url;
-    a.download = `expense_chart_${new Date().toISOString().substring(0, 7)}.png`;
+    a.download = `expense_chart_${startDate}_to_${endDate}.png`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -1241,13 +1255,14 @@ window.downloadChartImage = function() {
 };
 
 window.downloadChartCSV = function() {
-  const curMonthStr = new Date().toISOString().substring(0, 7);
+  const startDate = elements.dashStartDate.value;
+  const endDate = elements.dashEndDate.value;
   const expenseGroups = {};
   CATEGORIES.Expense.forEach(cat => { expenseGroups[cat] = 0; });
   let total = 0;
   
   state.transactions.forEach(tx => {
-    if (tx.Type === "Expense" && tx.Date.startsWith(curMonthStr)) {
+    if (tx.Type === "Expense" && tx.Date >= startDate && tx.Date <= endDate) {
       const amt = parseFloat(tx.Amount) || 0;
       expenseGroups[tx.Category] += amt;
       total += amt;
@@ -1268,7 +1283,7 @@ window.downloadChartCSV = function() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `expense_breakdown_${curMonthStr}.csv`;
+  a.download = `expense_breakdown_${startDate}_to_${endDate}.csv`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
