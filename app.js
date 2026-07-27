@@ -655,11 +655,20 @@ function renderExpenseCategoryChart(startDate, endDate) {
     colors.splice(0, colors.length, "#e2e8f0");
   }
   
+  // Calculate percentage for legend display
+  const totalExpense = hasData ? data.reduce((sum, val) => sum + val, 0) : 0;
+  const labelsWithPct = labels.map((label, idx) => {
+    if (!hasData) return label;
+    const val = data[idx];
+    const pct = totalExpense > 0 ? ((val / totalExpense) * 100).toFixed(1) : 0;
+    return `${label} (${pct}%)`;
+  });
+  
   const ctx = canvas.getContext("2d");
   state.chartInstances.expenses = new Chart(ctx, {
     type: 'doughnut',
     data: {
-      labels: labels,
+      labels: labelsWithPct,
       datasets: [{
         data: data,
         backgroundColor: colors,
@@ -685,7 +694,11 @@ function renderExpenseCategoryChart(startDate, endDate) {
           callbacks: {
             label: function(context) {
               const val = context.raw;
-              return ` ${context.label}: ${formatCurrency(val)}`;
+              const total = context.dataset.data.reduce((a, b) => a + b, 0);
+              const pct = total > 0 ? ((val / total) * 100).toFixed(1) : 0;
+              // Strip out the percentage suffix when rendering tooltip label
+              const cleanLabel = context.label.split(" (")[0];
+              return ` ${cleanLabel}: ${formatCurrency(val)} (${pct}%)`;
             }
           }
         }
