@@ -74,10 +74,10 @@
             <span>Expense Distribution</span>
             <div style="display: flex; gap: 8px; align-items: center;">
               <span id="lbl-expense-total" style="font-size: 0.75rem; font-weight: 500; color: var(--text-muted); background-color: var(--bg-tertiary); padding: 2px 8px; border-radius: var(--radius-full);">Total: RM 0.00</span>
-              <button id="btn-download-chart" class="tx-delete-btn" title="Download Chart Image" style="color: var(--primary); padding: 4px; display: flex; align-items: center;">
+              <button onclick="downloadChartImage()" class="tx-delete-btn" title="Download Chart Image" style="color: var(--primary); padding: 4px; display: flex; align-items: center;">
                 <i data-lucide="image" style="width: 16px; height: 16px;"></i>
               </button>
-              <button id="btn-download-csv" class="tx-delete-btn" title="Export CSV Data" style="color: var(--primary); padding: 4px; display: flex; align-items: center;">
+              <button onclick="downloadChartCSV()" class="tx-delete-btn" title="Export CSV Data" style="color: var(--primary); padding: 4px; display: flex; align-items: center;">
                 <i data-lucide="download" style="width: 16px; height: 16px;"></i>
               </button>
             </div>

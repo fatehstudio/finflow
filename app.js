@@ -108,7 +108,6 @@ document.addEventListener("DOMContentLoaded", () => {
   setupHistoryFilters();
   setupBudgetsForm();
   setupSettingsForm();
-  setupChartActions();
   
   // Default values
   elements.txDate.value = new Date().toISOString().split("T")[0];
@@ -1217,70 +1216,62 @@ function showToast(msg) {
   }, 4000);
 }
 
-function setupChartActions() {
-  const btnImg = document.getElementById("btn-download-chart");
-  const btnCsv = document.getElementById("btn-download-csv");
-  
-  if (btnImg) {
-    btnImg.addEventListener("click", () => {
-      const canvas = document.getElementById("chart-expenses-category");
-      if (canvas) {
-        // Render onto temporary canvas to apply a solid white background (preventing transparent black in default viewers)
-        const tempCanvas = document.createElement("canvas");
-        tempCanvas.width = canvas.width;
-        tempCanvas.height = canvas.height;
-        const tempCtx = tempCanvas.getContext("2d");
-        
-        tempCtx.fillStyle = "#ffffff";
-        tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-        tempCtx.drawImage(canvas, 0, 0);
-        
-        const url = tempCanvas.toDataURL("image/png");
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `expense_chart_${new Date().toISOString().substring(0, 7)}.png`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        showToast("Chart image downloaded!");
-      }
-    });
+window.downloadChartImage = function() {
+  const canvas = document.getElementById("chart-expenses-category");
+  if (canvas) {
+    // Render onto temporary canvas to apply a solid white background (preventing transparent black in default viewers)
+    const tempCanvas = document.createElement("canvas");
+    tempCanvas.width = canvas.width;
+    tempCanvas.height = canvas.height;
+    const tempCtx = tempCanvas.getContext("2d");
+    
+    tempCtx.fillStyle = "#ffffff";
+    tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+    tempCtx.drawImage(canvas, 0, 0);
+    
+    const url = tempCanvas.toDataURL("image/png");
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `expense_chart_${new Date().toISOString().substring(0, 7)}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    showToast("Chart image downloaded!");
   }
+};
+
+window.downloadChartCSV = function() {
+  const curMonthStr = new Date().toISOString().substring(0, 7);
+  const expenseGroups = {};
+  CATEGORIES.Expense.forEach(cat => { expenseGroups[cat] = 0; });
+  let total = 0;
   
-  if (btnCsv) {
-    btnCsv.addEventListener("click", () => {
-      const curMonthStr = new Date().toISOString().substring(0, 7);
-      const expenseGroups = {};
-      CATEGORIES.Expense.forEach(cat => { expenseGroups[cat] = 0; });
-      let total = 0;
-      
-      state.transactions.forEach(tx => {
-        if (tx.Type === "Expense" && tx.Date.startsWith(curMonthStr)) {
-          const amt = parseFloat(tx.Amount) || 0;
-          expenseGroups[tx.Category] += amt;
-          total += amt;
-        }
-      });
-      
-      let csvContent = "\ufeffCategory,Amount (RM),Percentage (%)\n"; // UTF-8 BOM for Excel support
-      
-      CATEGORIES.Expense.forEach(cat => {
-        const amt = expenseGroups[cat];
-        if (amt > 0) {
-          const pct = total > 0 ? ((amt / total) * 100).toFixed(1) : 0;
-          csvContent += `"${cat}",${amt.toFixed(2)},${pct}%\n`;
-        }
-      });
-      
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `expense_breakdown_${curMonthStr}.csv`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      showToast("CSV data downloaded!");
-    });
-  }
+  state.transactions.forEach(tx => {
+    if (tx.Type === "Expense" && tx.Date.startsWith(curMonthStr)) {
+      const amt = parseFloat(tx.Amount) || 0;
+      expenseGroups[tx.Category] += amt;
+      total += amt;
+    }
+  });
+  
+  let csvContent = "\ufeffCategory,Amount (RM),Percentage (%)\n"; // UTF-8 BOM for Excel support
+  
+  CATEGORIES.Expense.forEach(cat => {
+    const amt = expenseGroups[cat];
+    if (amt > 0) {
+      const pct = total > 0 ? ((amt / total) * 100).toFixed(1) : 0;
+      csvContent += `"${cat}",${amt.toFixed(2)},${pct}%\n`;
+    }
+  });
+  
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `expense_breakdown_${curMonthStr}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  showToast("CSV data downloaded!");
+};
 }
