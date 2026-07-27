@@ -1274,4 +1274,4 @@ window.downloadChartCSV = function() {
   document.body.removeChild(a);
   showToast("CSV data downloaded!");
 };
-}
+
