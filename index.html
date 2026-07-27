@@ -129,6 +129,31 @@
             <textarea id="tx-notes" class="form-control" placeholder="Enter notes here..."></textarea>
           </div>
 
+          <!-- Recurring Transaction Checkbox -->
+          <div class="form-group" style="flex-direction: row; align-items: center; gap: 8px; cursor: pointer; padding: 4px 0;">
+            <input type="checkbox" id="tx-is-recurring" style="width: 18px; height: 18px; accent-color: var(--primary);">
+            <label for="tx-is-recurring" style="font-weight: 700; cursor: pointer; margin-left: 0;">Is this a recurring bill?</label>
+          </div>
+
+          <!-- Recurring Details Panel -->
+          <div id="recurring-details-panel" style="display: none; background-color: var(--bg-tertiary); padding: 16px; border-radius: var(--radius-md); margin-bottom: 20px; border: 1px dashed var(--border-focus); flex-direction: column; gap: 12px; animation: fadeIn 0.3s ease;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="tx-recurring-freq">Frequency</label>
+              <select id="tx-recurring-freq" class="form-control" style="padding: 10px 14px;">
+                <option value="Monthly">Monthly</option>
+                <option value="Weekly">Weekly</option>
+                <option value="Yearly">Yearly</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="tx-recurring-count">Duration (Times)</label>
+              <input type="number" id="tx-recurring-count" class="form-control" style="padding: 10px 14px;" value="6" min="2" max="24">
+              <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; line-height: 1.2;">
+                This will automatically generate multiple entries (e.g. 6 monthly bills) in your log.
+              </p>
+            </div>
+          </div>
+
           <!-- Tags Selection -->
           <div class="form-group">
             <label>Tags (Select or Enter Custom)</label>

@@ -232,6 +232,15 @@ function setupFormEventListeners() {
       }
     }
   });
+
+  // Handle toggling recurring panel
+  const isRecurringCheckbox = document.getElementById("tx-is-recurring");
+  const recurringPanel = document.getElementById("recurring-details-panel");
+  if (isRecurringCheckbox && recurringPanel) {
+    isRecurringCheckbox.addEventListener("change", () => {
+      recurringPanel.style.display = isRecurringCheckbox.checked ? "flex" : "none";
+    });
+  }
   
   // Form submission
   elements.formTransaction.addEventListener("submit", (e) => {
@@ -282,30 +291,72 @@ function setupFormEventListeners() {
       }
       resetEditFormUI();
     } else {
-      const newTx = {
-        id: "tx_" + new Date().getTime() + "_" + Math.floor(Math.random() * 1000),
-        Date: date,
-        Type: state.form.type,
-        Category: state.form.category,
-        Amount: amount,
-        Notes: notes,
-        Tags: state.form.tags.join(",")
-      };
+      const isRecurring = isRecurringCheckbox && isRecurringCheckbox.checked;
       
-      state.transactions.unshift(newTx);
-      saveStateToLocal();
-      showToast("Transaction saved locally!");
-      
-      if (state.settings.apiUrl) {
-        postToSheets("addTransaction", newTx)
-          .then(() => {
-            showToast("Sync successful!");
-            syncWithSheets(false);
-          })
-          .catch(err => {
-            console.error(err);
-            showToast("Failed to sync to sheets. Saved locally.");
-          });
+      if (isRecurring) {
+        const freq = document.getElementById("tx-recurring-freq").value;
+        const count = parseInt(document.getElementById("tx-recurring-count").value) || 6;
+        
+        const recurringDates = calculateRecurringDates(date, freq, count);
+        const newTxs = [];
+        
+        recurringDates.forEach((recDate, index) => {
+          const recNotes = notes ? `${notes} (Recur ${index + 1}/${count})` : `(Recur ${index + 1}/${count})`;
+          
+          const newTx = {
+            id: "tx_" + new Date().getTime() + "_" + index + "_" + Math.floor(Math.random() * 1000),
+            Date: recDate,
+            Type: state.form.type,
+            Category: state.form.category,
+            Amount: amount,
+            Notes: recNotes,
+            Tags: state.form.tags.join(",")
+          };
+          newTxs.push(newTx);
+        });
+        
+        // Add all to state
+        state.transactions = [...newTxs, ...state.transactions];
+        saveStateToLocal();
+        showToast(`Added ${count} recurring bills locally!`);
+        
+        if (state.settings.apiUrl) {
+          postToSheets("addTransaction", newTxs)
+            .then(() => {
+              showToast("Sync successful!");
+              syncWithSheets(false);
+            })
+            .catch(err => {
+              console.error(err);
+              showToast("Failed to sync to sheets. Saved locally.");
+            });
+        }
+      } else {
+        const newTx = {
+          id: "tx_" + new Date().getTime() + "_" + Math.floor(Math.random() * 1000),
+          Date: date,
+          Type: state.form.type,
+          Category: state.form.category,
+          Amount: amount,
+          Notes: notes,
+          Tags: state.form.tags.join(",")
+        };
+        
+        state.transactions.unshift(newTx);
+        saveStateToLocal();
+        showToast("Transaction saved locally!");
+        
+        if (state.settings.apiUrl) {
+          postToSheets("addTransaction", newTx)
+            .then(() => {
+              showToast("Sync successful!");
+              syncWithSheets(false);
+            })
+            .catch(err => {
+              console.error(err);
+              showToast("Failed to sync to sheets. Saved locally.");
+            });
+        }
       }
     }
     
@@ -964,6 +1015,14 @@ function startEditTransaction(tx) {
     iconEl.setAttribute("data-lucide", "check-circle");
   }
   
+  // Hide recurring controls when editing
+  const recCheckbox = document.getElementById("tx-is-recurring");
+  if (recCheckbox) {
+    recCheckbox.parentNode.style.display = "none";
+    recCheckbox.checked = false;
+    document.getElementById("recurring-details-panel").style.display = "none";
+  }
+  
   switchView("add");
 }
 
@@ -979,6 +1038,37 @@ function resetEditFormUI() {
   if (iconEl) {
     iconEl.setAttribute("data-lucide", "plus-circle");
   }
+  
+  // Show and reset recurring controls
+  const recCheckbox = document.getElementById("tx-is-recurring");
+  if (recCheckbox) {
+    recCheckbox.parentNode.style.display = "flex";
+    recCheckbox.checked = false;
+    document.getElementById("recurring-details-panel").style.display = "none";
+  }
+}
+
+function calculateRecurringDates(startDateStr, frequency, occurrences) {
+  const dates = [];
+  const start = new Date(startDateStr);
+  
+  for (let i = 0; i < occurrences; i++) {
+    const d = new Date(start);
+    if (frequency === "Monthly") {
+      d.setMonth(start.getMonth() + i);
+    } else if (frequency === "Weekly") {
+      d.setDate(start.getDate() + (i * 7));
+    } else if (frequency === "Yearly") {
+      d.setFullYear(start.getFullYear() + i);
+    }
+    
+    // Format to YYYY-MM-DD
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    dates.push(`${yyyy}-${mm}-${dd}`);
+  }
+  return dates;
 }
 
 function deleteTransaction(id) {
