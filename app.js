@@ -235,6 +235,7 @@ function setupFormEventListeners() {
         if (!state.customTags.includes(val) && !DEFAULT_TAGS.includes(val)) {
           state.customTags.push(val);
           saveStateToLocal();
+          syncCustomTagsToSheets();
         }
         if (!state.form.tags.includes(val)) {
           state.form.tags.push(val);
@@ -522,7 +523,17 @@ function setupSettingsForm() {
     showToast("Settings saved!");
     
     if (url) {
-      syncWithSheets(true);
+      // Sync settings & custom tags
+      const settingsToSave = {
+        currencySymbol: currency,
+        customTags: state.customTags.join(",")
+      };
+      postToSheets("saveSettings", { settings: settingsToSave })
+        .then(() => syncWithSheets(true))
+        .catch(err => {
+          console.error("Failed to save settings to sheet:", err);
+          syncWithSheets(true);
+        });
     } else {
       updateUI();
     }
@@ -1096,6 +1107,17 @@ function calculateRecurringDates(startDateStr, frequency, occurrences) {
   return dates;
 }
 
+function syncCustomTagsToSheets() {
+  if (state.settings.apiUrl) {
+    const settingsToSave = {
+      currencySymbol: state.settings.currencySymbol,
+      customTags: state.customTags.join(",")
+    };
+    postToSheets("saveSettings", { settings: settingsToSave })
+      .catch(err => console.error("Failed to sync custom tags to Sheets:", err));
+  }
+}
+
 function deleteTransaction(id) {
   // Remove locally
   state.transactions = state.transactions.filter(tx => tx.id !== id);
@@ -1146,6 +1168,12 @@ function syncWithSheets(interactive = false) {
         if (serverData.settings) {
           state.settings.currencySymbol = serverData.settings.currencySymbol || state.settings.currencySymbol;
           elements.settingsCurrency.value = state.settings.currencySymbol;
+          
+          if (serverData.settings.customTags) {
+            const serverCustomTags = serverData.settings.customTags.split(",").filter(t => t.trim());
+            // Merge unique tags
+            state.customTags = Array.from(new Set([...state.customTags, ...serverCustomTags]));
+          }
         }
         
         // Merge budgets
