@@ -1084,6 +1084,8 @@ function postToSheets(action, payload) {
   // Special cases for parameters that are expected at root
   if (action === "deleteTransaction") {
     bodyData.id = payload.id;
+  } else if (action === "updateTransaction") {
+    bodyData.id = payload.id;
   } else if (action === "updateBudgets") {
     bodyData.budgets = payload.budgets;
   } else if (action === "saveSettings") {
