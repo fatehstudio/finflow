@@ -70,7 +70,18 @@
 
         <!-- Chart: Expense Breakdown -->
         <div class="chart-card">
-          <h3>Expense Distribution <span id="lbl-expense-total">Total: RM 0.00</span></h3>
+          <h3>
+            <span>Expense Distribution</span>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <span id="lbl-expense-total" style="font-size: 0.75rem; font-weight: 500; color: var(--text-muted); background-color: var(--bg-tertiary); padding: 2px 8px; border-radius: var(--radius-full);">Total: RM 0.00</span>
+              <button id="btn-download-chart" class="tx-delete-btn" title="Download Chart Image" style="color: var(--primary); padding: 4px; display: flex; align-items: center;">
+                <i data-lucide="image" style="width: 16px; height: 16px;"></i>
+              </button>
+              <button id="btn-download-csv" class="tx-delete-btn" title="Export CSV Data" style="color: var(--primary); padding: 4px; display: flex; align-items: center;">
+                <i data-lucide="download" style="width: 16px; height: 16px;"></i>
+              </button>
+            </div>
+          </h3>
           <div class="chart-wrapper">
             <canvas id="chart-expenses-category"></canvas>
           </div>
