@@ -30,7 +30,7 @@ let state = {
     apiUrl: "",
     currencySymbol: "RM"
   },
-  currentView: "home",
+  currentView: "add",
   
   // Transaction Form Temporary State
   form: {

@@ -38,7 +38,7 @@
     <main>
       
       <!-- 1. Home / Dashboard View -->
-      <section id="view-home" class="view active">
+      <section id="view-home" class="view">
         <!-- Balance Card -->
         <div class="balance-card">
           <div class="label">Net Balance</div>
@@ -86,7 +86,7 @@
       </section>
 
       <!-- 2. Add Transaction View -->
-      <section id="view-add" class="view">
+      <section id="view-add" class="view active">
         <h2 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 20px;">New Transaction</h2>
         
         <form id="form-transaction" onsubmit="return false;">
@@ -240,11 +240,11 @@
 
     <!-- Sticky Bottom Navigation -->
     <nav>
-      <a class="nav-item active" data-view="home">
+      <a class="nav-item" data-view="home">
         <i data-lucide="home"></i>
         <span>Dashboard</span>
       </a>
-      <a class="nav-item" data-view="add">
+      <a class="nav-item active" data-view="add">
         <i data-lucide="plus-circle"></i>
         <span>Add</span>
       </a>
