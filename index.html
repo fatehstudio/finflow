@@ -87,7 +87,7 @@
 
       <!-- 2. Add Transaction View -->
       <section id="view-add" class="view active">
-        <h2 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 20px;">New Transaction</h2>
+        <h2 id="add-view-title" style="font-size: 1.25rem; font-weight: 700; margin-bottom: 20px;">New Transaction</h2>
         
         <form id="form-transaction" onsubmit="return false;">
           <!-- Type Selector -->
@@ -142,7 +142,7 @@
 
           <!-- Submit Button -->
           <button type="submit" id="btn-save-transaction" class="btn-primary">
-            <i data-lucide="plus-circle"></i> Save Transaction
+            <i id="btn-save-tx-icon" data-lucide="plus-circle"></i> <span id="btn-save-tx-text">Save Transaction</span>
           </button>
         </form>
       </section>

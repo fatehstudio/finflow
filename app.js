@@ -36,7 +36,8 @@ let state = {
   form: {
     type: "Expense",
     category: "",
-    tags: []
+    tags: [],
+    editId: null
   },
   
   customTags: [],
@@ -165,6 +166,10 @@ function setupNavigation() {
 function switchView(viewName) {
   state.currentView = viewName;
   
+  if (viewName !== "add") {
+    resetEditFormUI();
+  }
+  
   // Update views active class
   Object.keys(elements.views).forEach(key => {
     if (key === viewName) {
@@ -246,19 +251,63 @@ function setupFormEventListeners() {
       return;
     }
     
-    const newTx = {
-      id: "tx_" + new Date().getTime() + "_" + Math.floor(Math.random() * 1000),
-      Date: date,
-      Type: state.form.type,
-      Category: state.form.category,
-      Amount: amount,
-      Notes: notes,
-      Tags: state.form.tags.join(",")
-    };
+    const isEdit = state.form.editId !== null;
     
-    // Add to state
-    state.transactions.unshift(newTx);
-    saveStateToLocal();
+    if (isEdit) {
+      const txIndex = state.transactions.findIndex(t => t.id === state.form.editId);
+      if (txIndex !== -1) {
+        state.transactions[txIndex].Date = date;
+        state.transactions[txIndex].Type = state.form.type;
+        state.transactions[txIndex].Category = state.form.category;
+        state.transactions[txIndex].Amount = amount;
+        state.transactions[txIndex].Notes = notes;
+        state.transactions[txIndex].Tags = state.form.tags.join(",");
+        
+        const updatedTx = state.transactions[txIndex];
+        saveStateToLocal();
+        showToast("Transaction updated locally!");
+        
+        // Sync to Sheets
+        if (state.settings.apiUrl) {
+          postToSheets("updateTransaction", updatedTx)
+            .then(() => {
+              showToast("Sync successful!");
+              syncWithSheets(false);
+            })
+            .catch(err => {
+              console.error(err);
+              showToast("Failed to sync updates to sheets. Saved locally.");
+            });
+        }
+      }
+      resetEditFormUI();
+    } else {
+      const newTx = {
+        id: "tx_" + new Date().getTime() + "_" + Math.floor(Math.random() * 1000),
+        Date: date,
+        Type: state.form.type,
+        Category: state.form.category,
+        Amount: amount,
+        Notes: notes,
+        Tags: state.form.tags.join(",")
+      };
+      
+      state.transactions.unshift(newTx);
+      saveStateToLocal();
+      showToast("Transaction saved locally!");
+      
+      if (state.settings.apiUrl) {
+        postToSheets("addTransaction", newTx)
+          .then(() => {
+            showToast("Sync successful!");
+            syncWithSheets(false);
+          })
+          .catch(err => {
+            console.error(err);
+            showToast("Failed to sync to sheets. Saved locally.");
+          });
+      }
+    }
     
     // Reset form
     elements.txAmount.value = "";
@@ -269,23 +318,9 @@ function setupFormEventListeners() {
     
     renderCategoryGrid();
     renderTagChoices();
-    showToast("Transaction saved locally!");
     
-    // Sync to Sheets in background
-    if (state.settings.apiUrl) {
-      postToSheets("addTransaction", newTx)
-        .then(() => {
-          showToast("Sync successful!");
-          syncWithSheets(false); // reload full dashboard
-        })
-        .catch(err => {
-          console.error(err);
-          showToast("Failed to sync to sheets. Saved in local cache.");
-        });
-    }
-    
-    // Redirect to home
-    switchView("home");
+    // Redirect
+    switchView(isEdit ? "history" : "home");
   });
 }
 
@@ -784,16 +819,31 @@ function renderHistory() {
     amountEl.textContent = `${prefix}${formatCurrency(tx.Amount)}`;
     right.appendChild(amountEl);
     
+    const actionsRow = document.createElement("div");
+    actionsRow.style.display = "flex";
+    actionsRow.style.gap = "8px";
+    actionsRow.style.alignItems = "center";
+    
+    const editBtn = document.createElement("button");
+    editBtn.className = "tx-delete-btn";
+    editBtn.style.color = "var(--primary)";
+    editBtn.innerHTML = `<i data-lucide="pencil" style="width: 16px; height: 16px;"></i>`;
+    editBtn.addEventListener("click", () => {
+      startEditTransaction(tx);
+    });
+    actionsRow.appendChild(editBtn);
+    
     const deleteBtn = document.createElement("button");
     deleteBtn.className = "tx-delete-btn";
-    deleteBtn.setAttribute("data-id", tx.id);
     deleteBtn.innerHTML = `<i data-lucide="trash-2" style="width: 16px; height: 16px;"></i>`;
     deleteBtn.addEventListener("click", () => {
       if (confirm("Delete this transaction?")) {
         deleteTransaction(tx.id);
       }
     });
-    right.appendChild(deleteBtn);
+    actionsRow.appendChild(deleteBtn);
+    
+    right.appendChild(actionsRow);
     
     item.appendChild(right);
     elements.historyList.appendChild(item);
@@ -882,6 +932,55 @@ function renderBudgets() {
 // -------------------------------------------------------------
 // Transaction Data Operations
 // -------------------------------------------------------------
+function startEditTransaction(tx) {
+  state.form.editId = tx.id;
+  state.form.type = tx.Type;
+  state.form.category = tx.Category;
+  state.form.tags = tx.Tags ? tx.Tags.split(",") : [];
+  
+  elements.txDate.value = tx.Date;
+  elements.txAmount.value = tx.Amount;
+  elements.txNotes.value = tx.Notes || "";
+  
+  elements.typeButtons.forEach(btn => {
+    if (btn.getAttribute("data-type") === tx.Type) {
+      btn.classList.add("active");
+    } else {
+      btn.classList.remove("active");
+    }
+  });
+  
+  renderCategoryGrid();
+  renderTagChoices();
+  
+  const titleEl = document.getElementById("add-view-title");
+  if (titleEl) titleEl.textContent = "Edit Transaction";
+  
+  const textEl = document.getElementById("btn-save-tx-text");
+  if (textEl) textEl.textContent = "Update Transaction";
+  
+  const iconEl = document.getElementById("btn-save-tx-icon");
+  if (iconEl) {
+    iconEl.setAttribute("data-lucide", "check-circle");
+  }
+  
+  switchView("add");
+}
+
+function resetEditFormUI() {
+  state.form.editId = null;
+  const titleEl = document.getElementById("add-view-title");
+  if (titleEl) titleEl.textContent = "New Transaction";
+  
+  const textEl = document.getElementById("btn-save-tx-text");
+  if (textEl) textEl.textContent = "Save Transaction";
+  
+  const iconEl = document.getElementById("btn-save-tx-icon");
+  if (iconEl) {
+    iconEl.setAttribute("data-lucide", "plus-circle");
+  }
+}
+
 function deleteTransaction(id) {
   // Remove locally
   state.transactions = state.transactions.filter(tx => tx.id !== id);
