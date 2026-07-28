@@ -6,7 +6,7 @@
 const CATEGORIES = {
   Expense: [
     "Food", "Drinks", "Fuel", "Toll / Parking", "Bills", "House", 
-    "Shopping", "Healthcare", "Education", "Entertainment", "Charity / Zakat", "Fateh", "Others"
+    "Shopping", "Healthcare", "Education", "Entertainment", "Charity / Zakat", "Fateh", "Loan", "Ummi", "Others"
   ],
   Income: [
     "Salary", "Allowance", "Bonus", "Dividend", "Others"
