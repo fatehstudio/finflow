@@ -6,10 +6,10 @@
 const CATEGORIES = {
   Expense: [
     "Food", "Drinks", "Fuel", "Toll / Parking", "Bills", "House", 
-    "Shopping", "Healthcare", "Education", "Entertainment", "Charity / Zakat", "Fateh", "Loan", "Ummi", "Others"
+    "Shopping", "Personal", "Healthcare", "Education", "Entertainment", "Charity / Zakat", "Fateh", "Loan", "Ummi", "Travel", "Others"
   ],
   Income: [
-    "Salary", "Allowance", "Bonus", "Dividend", "Others"
+    "Salary", "Allowance", "Bonus", "Dividend", "Rumah Sewa", "Others"
   ],
   Savings: [
     "ASB", "Tabung Haji", "Bank Savings", "Emergency Fund"
