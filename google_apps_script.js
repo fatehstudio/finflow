@@ -222,7 +222,7 @@ function deleteTransaction(ss, id) {
   var rows = sheet.getDataRange().getValues();
   
   for (var i = 1; i < rows.length; i++) {
-    if (rows[i][0] === id) {
+    if (String(rows[i][0]) === String(id)) {
       sheet.deleteRow(i + 1); // +1 because row indices are 1-based, and i is index in 0-based array
       return { id: id, deleted: true };
     }

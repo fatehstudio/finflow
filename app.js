@@ -144,7 +144,13 @@ function loadLocalData() {
   const localSettings = localStorage.getItem("finflow_settings");
   const localCustomTags = localStorage.getItem("finflow_custom_tags");
   
-  if (localTx) state.transactions = JSON.parse(localTx);
+  if (localTx) {
+    const parsed = JSON.parse(localTx);
+    state.transactions = parsed.map(tx => {
+      const id = tx.id || tx.ID || ("tx_" + new Date().getTime());
+      return { ...tx, id: id, ID: id };
+    });
+  }
   if (localBudgets) state.budgets = JSON.parse(localBudgets);
   if (localSettings) state.settings = JSON.parse(localSettings);
   if (localCustomTags) state.customTags = JSON.parse(localCustomTags);
@@ -967,8 +973,9 @@ function renderHistory() {
     deleteBtn.className = "tx-delete-btn";
     deleteBtn.innerHTML = `<i data-lucide="trash-2" style="width: 16px; height: 16px;"></i>`;
     deleteBtn.addEventListener("click", () => {
+      const txId = tx.id || tx.ID;
       if (confirm("Delete this transaction?")) {
-        deleteTransaction(tx.id);
+        deleteTransaction(txId);
       }
     });
     actionsRow.appendChild(deleteBtn);
@@ -1071,7 +1078,7 @@ function renderBudgets() {
 // Transaction Data Operations
 // -------------------------------------------------------------
 function startEditTransaction(tx) {
-  state.form.editId = tx.id;
+  state.form.editId = tx.id || tx.ID;
   state.form.type = tx.Type;
   state.form.category = tx.Category;
   state.form.tags = tx.Tags ? tx.Tags.split(",") : [];
@@ -1170,8 +1177,17 @@ function syncCustomTagsToSheets() {
 }
 
 function deleteTransaction(id) {
-  // Remove locally
-  state.transactions = state.transactions.filter(tx => tx.id !== id);
+  if (!id) {
+    console.error("deleteTransaction called with invalid/empty id:", id);
+    showToast("Error: Transaction ID not found.");
+    return;
+  }
+
+  // Remove locally (handle both tx.id and tx.ID)
+  state.transactions = state.transactions.filter(tx => {
+    const txId = tx.id || tx.ID;
+    return txId !== id;
+  });
   saveStateToLocal();
   updateUI();
   
@@ -1239,7 +1255,14 @@ function syncWithSheets(interactive = false) {
         
         // Merge transactions
         if (serverData.transactions) {
-          state.transactions = serverData.transactions;
+          state.transactions = serverData.transactions.map(tx => {
+            const id = tx.id || tx.ID || ("tx_" + new Date().getTime());
+            return {
+              ...tx,
+              id: id,
+              ID: id
+            };
+          });
         }
         
         saveStateToLocal();
@@ -1478,8 +1501,13 @@ function showBudgetDetailsModal(category, budgetVal, actualVal, cycle) {
       deleteBtn.innerHTML = `<i data-lucide="trash-2" style="width: 15px; height: 15px;"></i>`;
       deleteBtn.addEventListener("click", (e) => {
         e.stopPropagation();
+        const txId = tx.id || tx.ID;
+        if (!txId) {
+          showToast("Error: Transaction ID missing.");
+          return;
+        }
         if (confirm("Delete this transaction?")) {
-          deleteTransaction(tx.id);
+          deleteTransaction(txId);
           // Recalculate actual spent for this category and refresh modal
           const updatedCycle = getSalaryCycleRange();
           let updatedActual = 0;
