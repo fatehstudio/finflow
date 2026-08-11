@@ -6,7 +6,7 @@
   <title>FinFlow - Personal Finance Tracker</title>
   
   <!-- Premium Stylesheets -->
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=2.8">
   
   <!-- Lucide Icons CDN for sleek vector graphics -->
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -39,76 +39,87 @@
       
       <!-- 1. Home / Dashboard View -->
       <section id="view-home" class="view">
-        <!-- Balance Card -->
-        <div class="balance-card">
-          <div class="label">Net Balance</div>
-          <div id="val-net-balance" class="value">RM 0.00</div>
-          
-          <div class="balance-grid">
-            <div class="balance-grid-item">
-              <div class="mini-label">Monthly Income</div>
-              <div id="val-monthly-income" class="mini-value">RM 0.00</div>
+        <!-- Top Hero Grid: Balance Card + Quick Stats/Filter -->
+        <div class="dashboard-hero-grid">
+          <!-- Balance Card -->
+          <div class="balance-card">
+            <div class="balance-main-group">
+              <div class="label">Net Balance</div>
+              <div id="val-net-balance" class="value">RM 0.00</div>
             </div>
-            <div class="balance-grid-item">
-              <div class="mini-label">Monthly Expenses</div>
-              <div id="val-monthly-expenses" class="mini-value">RM 0.00</div>
+            
+            <div class="balance-grid">
+              <div class="balance-grid-item">
+                <div class="mini-label">Monthly Income</div>
+                <div id="val-monthly-income" class="mini-value">RM 0.00</div>
+              </div>
+              <div class="balance-grid-item">
+                <div class="mini-label">Monthly Expenses</div>
+                <div id="val-monthly-expenses" class="mini-value">RM 0.00</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Hero Side: Savings, Investment & Date Filter -->
+          <div class="dashboard-hero-side">
+            <!-- Savings & Investment Row -->
+            <div class="secondary-metrics">
+              <div class="metric-pill savings">
+                <span class="pill-label">Total Savings</span>
+                <span id="val-monthly-savings" class="pill-value">RM 0.00</span>
+              </div>
+              <div class="metric-pill investment">
+                <span class="pill-label">Total Invested</span>
+                <span id="val-monthly-investments" class="pill-value">RM 0.00</span>
+              </div>
+            </div>
+
+            <!-- Date Range Selector -->
+            <div class="chart-card date-filter-card">
+              <h3 style="font-size: 0.95rem; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                <i data-lucide="calendar" style="width: 18px; stroke-width: 2.2;"></i> Date Range Filter
+              </h3>
+              <div class="date-filter-grid">
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label for="dash-start-date" style="font-size: 0.75rem; font-weight: 700;">From</label>
+                  <input type="date" id="dash-start-date" class="form-control" style="padding: 8px 12px; font-size: 0.85rem;">
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label for="dash-end-date" style="font-size: 0.75rem; font-weight: 700;">To</label>
+                  <input type="date" id="dash-end-date" class="form-control" style="padding: 8px 12px; font-size: 0.85rem;">
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- Savings & Investment Row -->
-        <div class="secondary-metrics">
-          <div class="metric-pill savings">
-            <span class="pill-label">Total Savings</span>
-            <span id="val-monthly-savings" class="pill-value">RM 0.00</span>
-          </div>
-          <div class="metric-pill investment">
-            <span class="pill-label">Total Invested</span>
-            <span id="val-monthly-investments" class="pill-value">RM 0.00</span>
-          </div>
-        </div>
-
-        <!-- Date Range Selector -->
-        <div class="chart-card" style="margin-bottom: 24px; padding: 16px 20px;">
-          <h3 style="font-size: 0.95rem; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
-            <i data-lucide="calendar" style="width: 18px; stroke-width: 2.2;"></i> Date Range Filter
-          </h3>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-            <div class="form-group" style="margin-bottom: 0;">
-              <label for="dash-start-date" style="font-size: 0.75rem; font-weight: 700;">From</label>
-              <input type="date" id="dash-start-date" class="form-control" style="padding: 8px 12px; font-size: 0.85rem;">
-            </div>
-            <div class="form-group" style="margin-bottom: 0;">
-              <label for="dash-end-date" style="font-size: 0.75rem; font-weight: 700;">To</label>
-              <input type="date" id="dash-end-date" class="form-control" style="padding: 8px 12px; font-size: 0.85rem;">
+        <!-- Charts Grid (2 columns on laptop) -->
+        <div class="dashboard-charts-grid">
+          <!-- Chart: Expense Breakdown -->
+          <div class="chart-card">
+            <h3>
+              <span>Expense Distribution</span>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <span id="lbl-expense-total" style="font-size: 0.75rem; font-weight: 500; color: var(--text-muted); background-color: var(--bg-tertiary); padding: 2px 8px; border-radius: var(--radius-full);">Total: RM 0.00</span>
+                <button onclick="downloadChartImage()" class="tx-delete-btn" title="Download Chart Image" style="color: var(--primary); padding: 4px; display: flex; align-items: center;">
+                  <i data-lucide="image" style="width: 16px; height: 16px;"></i>
+                </button>
+                <button onclick="downloadChartCSV()" class="tx-delete-btn" title="Export CSV Data" style="color: var(--primary); padding: 4px; display: flex; align-items: center;">
+                  <i data-lucide="download" style="width: 16px; height: 16px;"></i>
+                </button>
+              </div>
+            </h3>
+            <div class="chart-wrapper">
+              <canvas id="chart-expenses-category"></canvas>
             </div>
           </div>
-        </div>
 
-        <!-- Chart: Expense Breakdown -->
-        <div class="chart-card">
-          <h3>
-            <span>Expense Distribution</span>
-            <div style="display: flex; gap: 8px; align-items: center;">
-              <span id="lbl-expense-total" style="font-size: 0.75rem; font-weight: 500; color: var(--text-muted); background-color: var(--bg-tertiary); padding: 2px 8px; border-radius: var(--radius-full);">Total: RM 0.00</span>
-              <button onclick="downloadChartImage()" class="tx-delete-btn" title="Download Chart Image" style="color: var(--primary); padding: 4px; display: flex; align-items: center;">
-                <i data-lucide="image" style="width: 16px; height: 16px;"></i>
-              </button>
-              <button onclick="downloadChartCSV()" class="tx-delete-btn" title="Export CSV Data" style="color: var(--primary); padding: 4px; display: flex; align-items: center;">
-                <i data-lucide="download" style="width: 16px; height: 16px;"></i>
-              </button>
+          <!-- Chart: Cash Flow Trend -->
+          <div class="chart-card">
+            <h3>Cash Flow Trend <span>Salary Cycles</span></h3>
+            <div class="chart-wrapper">
+              <canvas id="chart-cashflow-trend"></canvas>
             </div>
-          </h3>
-          <div class="chart-wrapper">
-            <canvas id="chart-expenses-category"></canvas>
-          </div>
-        </div>
-
-        <!-- Chart: Cash Flow Trend -->
-        <div class="chart-card">
-          <h3>Cash Flow Trend <span>Last 6 Months</span></h3>
-          <div class="chart-wrapper">
-            <canvas id="chart-cashflow-trend"></canvas>
           </div>
         </div>
       </section>
@@ -324,6 +335,6 @@
   </div>
 
   <!-- JavaScript Logic -->
-  <script src="app.js?v=2.7"></script>
+  <script src="app.js?v=2.8"></script>
 </body>
 </html>
