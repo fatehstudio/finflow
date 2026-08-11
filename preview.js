@@ -1344,7 +1344,232 @@ function closeBudgetModal() {
   if (modal) modal.classList.remove("show");
 }
 
+function showCategoryTypeDetailsModal(txType = "Income", cycle = getSalaryCycleRange(), selectedTag = "ALL") {
+  const modal = document.getElementById("budget-modal");
+  if (!modal) return;
+
+  activeBudgetTagFilter = selectedTag;
+
+  // Filter all transactions for this Type in active salary cycle
+  const allTxs = state.transactions.filter(
+    tx => tx.Type === txType && tx.Date >= cycle.startDate && tx.Date <= cycle.endDate
+  );
+
+  // Calculate totals and sub-tags
+  const tagsMap = {};
+  let untaggedTotal = 0;
+  let untaggedCount = 0;
+  let totalAmount = 0;
+
+  allTxs.forEach(tx => {
+    const amt = parseFloat(tx.Amount) || 0;
+    totalAmount += amt;
+
+    if (!tx.Tags || !tx.Tags.trim()) {
+      untaggedTotal += amt;
+      untaggedCount++;
+    } else {
+      const tagsList = tx.Tags.split(",").map(t => t.trim()).filter(Boolean);
+      if (tagsList.length === 0) {
+        untaggedTotal += amt;
+        untaggedCount++;
+      } else {
+        tagsList.forEach(tag => {
+          if (!tagsMap[tag]) tagsMap[tag] = { total: 0, count: 0 };
+          tagsMap[tag].total += amt;
+          tagsMap[tag].count++;
+        });
+      }
+    }
+  });
+
+  // Set modal headers and top summary pills
+  const typeTitle = txType === "Income" ? "Monthly Inflow (Income)" : 
+                    txType === "Expense" ? "Monthly Outflow (Expenses)" : 
+                    txType === "Savings" ? "Monthly Savings" : "Monthly Investments";
+
+  document.getElementById("modal-budget-category").textContent = typeTitle;
+  document.getElementById("modal-budget-cycle").textContent = `Cycle: ${formatReadableDate(cycle.startDate)} - ${formatReadableDate(cycle.endDate)}`;
+
+  document.getElementById("modal-budget-spent").textContent = formatCurrency(totalAmount);
+  
+  // Set labels
+  const spentPill = document.querySelector(".modal-pill.spent .pill-label");
+  if (spentPill) spentPill.textContent = txType === "Income" ? "Total Inflow" : "Total Amount";
+
+  const targetPill = document.querySelector(".modal-pill.target .pill-label");
+  if (targetPill) targetPill.textContent = "Deposits / Items";
+  document.getElementById("modal-budget-limit").textContent = `${allTxs.length} items`;
+
+  const remainingPill = document.querySelector(".modal-pill.remaining .pill-label");
+  if (remainingPill) remainingPill.textContent = "Average / Item";
+  const avgAmt = allTxs.length > 0 ? (totalAmount / allTxs.length) : 0;
+  document.getElementById("modal-budget-remaining").textContent = formatCurrency(avgAmt);
+
+  // Build Tag Breakdown Pills
+  const tagsPillsContainer = document.getElementById("modal-budget-tags-pills");
+  if (tagsPillsContainer) {
+    tagsPillsContainer.innerHTML = "";
+
+    const allPill = document.createElement("button");
+    allPill.className = `modal-tag-pill ${activeBudgetTagFilter === "ALL" ? "active" : ""}`;
+    allPill.innerHTML = `All (${allTxs.length}) • ${formatCurrency(totalAmount)}`;
+    allPill.addEventListener("click", () => {
+      showCategoryTypeDetailsModal(txType, cycle, "ALL");
+    });
+    tagsPillsContainer.appendChild(allPill);
+
+    Object.keys(tagsMap).sort().forEach(tag => {
+      const tagData = tagsMap[tag];
+      const pill = document.createElement("button");
+      pill.className = `modal-tag-pill ${activeBudgetTagFilter === tag ? "active" : ""}`;
+      pill.innerHTML = `🏷️ ${escapeHtml(tag)} (${tagData.count}) • ${formatCurrency(tagData.total)}`;
+      pill.addEventListener("click", () => {
+        showCategoryTypeDetailsModal(txType, cycle, tag);
+      });
+      tagsPillsContainer.appendChild(pill);
+    });
+
+    if (untaggedCount > 0) {
+      const noTagPill = document.createElement("button");
+      noTagPill.className = `modal-tag-pill ${activeBudgetTagFilter === "_NO_TAG_" ? "active" : ""}`;
+      noTagPill.innerHTML = `⚪ No Tag (${untaggedCount}) • ${formatCurrency(untaggedTotal)}`;
+      noTagPill.addEventListener("click", () => {
+        showCategoryTypeDetailsModal(txType, cycle, "_NO_TAG_");
+      });
+      tagsPillsContainer.appendChild(noTagPill);
+    }
+  }
+
+  // Filter transactions
+  let filteredTxs = allTxs;
+  let filteredSubtotal = totalAmount;
+
+  if (activeBudgetTagFilter === "_NO_TAG_") {
+    filteredTxs = allTxs.filter(tx => !tx.Tags || !tx.Tags.trim());
+    filteredSubtotal = untaggedTotal;
+  } else if (activeBudgetTagFilter !== "ALL") {
+    filteredTxs = allTxs.filter(tx => {
+      if (!tx.Tags) return false;
+      const list = tx.Tags.split(",").map(t => t.trim().toLowerCase());
+      return list.includes(activeBudgetTagFilter.toLowerCase());
+    });
+    filteredSubtotal = tagsMap[activeBudgetTagFilter] ? tagsMap[activeBudgetTagFilter].total : 0;
+  }
+
+  filteredTxs.sort((a, b) => new Date(b.Date) - new Date(a.Date));
+
+  const countEl = document.getElementById("modal-budget-count");
+  if (countEl) countEl.textContent = filteredTxs.length;
+
+  const subtotalEl = document.getElementById("modal-budget-subtotal");
+  if (subtotalEl) subtotalEl.textContent = `Subtotal: ${formatCurrency(filteredSubtotal)}`;
+
+  const listContainer = document.getElementById("modal-budget-tx-list");
+  listContainer.innerHTML = "";
+
+  if (filteredTxs.length === 0) {
+    listContainer.innerHTML = `<div class="modal-no-tx"><p>No ${txType.toLowerCase()} transactions logged for this tag.</p></div>`;
+  } else {
+    filteredTxs.forEach(tx => {
+      const item = document.createElement("div");
+      item.className = "modal-tx-item";
+
+      const left = document.createElement("div");
+      left.className = "modal-tx-left";
+
+      const headerLine = document.createElement("div");
+      headerLine.style.display = "flex";
+      headerLine.style.alignItems = "center";
+      headerLine.style.gap = "8px";
+
+      const dateEl = document.createElement("span");
+      dateEl.className = "modal-tx-date";
+      dateEl.textContent = formatReadableDate(tx.Date);
+      headerLine.appendChild(dateEl);
+
+      const catBadge = document.createElement("span");
+      catBadge.style.fontSize = "0.72rem";
+      catBadge.style.fontWeight = "700";
+      catBadge.style.color = txType === "Income" ? "#34d399" : "#a5b4fc";
+      catBadge.textContent = `[${tx.Category}]`;
+      headerLine.appendChild(catBadge);
+
+      left.appendChild(headerLine);
+
+      if (tx.Notes) {
+        const notesEl = document.createElement("div");
+        notesEl.className = "modal-tx-notes";
+        notesEl.textContent = tx.Notes;
+        left.appendChild(notesEl);
+      }
+
+      if (tx.Tags && tx.Tags.trim()) {
+        const tagsContainer = document.createElement("div");
+        tagsContainer.className = "modal-tx-tags";
+        tx.Tags.split(",").forEach(t => {
+          if (t.trim()) {
+            const badge = document.createElement("span");
+            badge.className = "tag-badge";
+            badge.textContent = t.trim();
+            tagsContainer.appendChild(badge);
+          }
+        });
+        left.appendChild(tagsContainer);
+      } else {
+        const noTagBadge = document.createElement("span");
+        noTagBadge.className = "tag-badge";
+        noTagBadge.style.opacity = "0.6";
+        noTagBadge.textContent = "No Tag";
+        left.appendChild(noTagBadge);
+      }
+
+      const right = document.createElement("div");
+      right.className = "modal-tx-right";
+
+      const amtEl = document.createElement("span");
+      amtEl.className = "modal-tx-amount";
+      amtEl.style.color = txType === "Income" ? "#34d399" : "#fb7185";
+      amtEl.textContent = `${txType === "Income" ? "+" : "-"}${formatCurrency(tx.Amount)}`;
+      right.appendChild(amtEl);
+
+      const deleteBtn = document.createElement("button");
+      deleteBtn.className = "tx-delete-btn";
+      deleteBtn.title = "Delete Transaction";
+      deleteBtn.innerHTML = `<i data-lucide="trash-2" style="width: 15px; height: 15px;"></i>`;
+      deleteBtn.addEventListener("click", e => {
+        e.stopPropagation();
+        const txId = tx.id || tx.ID;
+        if (!txId) return;
+        if (confirm("Delete this transaction?")) {
+          deleteTransaction(txId);
+          showCategoryTypeDetailsModal(txType, cycle, activeBudgetTagFilter);
+        }
+      });
+      right.appendChild(deleteBtn);
+
+      item.appendChild(left);
+      item.appendChild(right);
+      listContainer.appendChild(item);
+    });
+  }
+
+  modal.classList.add("show");
+  lucide.createIcons();
+}
+
+function showInflowDetailsModal(cycle) {
+  showCategoryTypeDetailsModal("Income", cycle);
+}
+
+function showOutflowDetailsModal(cycle) {
+  showCategoryTypeDetailsModal("Expense", cycle);
+}
+
 window.showBudgetDetailsModal = showBudgetDetailsModal;
+window.showInflowDetailsModal = showInflowDetailsModal;
+window.showOutflowDetailsModal = showOutflowDetailsModal;
+window.showCategoryTypeDetailsModal = showCategoryTypeDetailsModal;
 window.closeBudgetModal = closeBudgetModal;
 
 document.addEventListener("keydown", e => {

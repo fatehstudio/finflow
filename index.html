@@ -6,7 +6,7 @@
   <title>FinFlow - Personal Finance Tracker</title>
   
   <!-- Premium Stylesheets -->
-  <link rel="stylesheet" href="style.css?v=3.4">
+  <link rel="stylesheet" href="style.css?v=3.5">
   
   <!-- Lucide Icons CDN for sleek vector graphics -->
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -55,12 +55,12 @@
             </div>
             
             <div class="balance-grid">
-              <div class="balance-grid-item">
-                <div class="mini-label">Monthly Income</div>
+              <div class="balance-grid-item clickable-kpi" onclick="showInflowDetailsModal(getSalaryCycleRange())" title="Click to view all Inflow transactions & sub-tags">
+                <div class="mini-label" style="display: flex; align-items: center; justify-content: space-between;">Monthly Income <i data-lucide="chevron-right" style="width: 12px; height: 12px; opacity: 0.8;"></i></div>
                 <div id="val-monthly-income" class="mini-value">RM 0.00</div>
               </div>
-              <div class="balance-grid-item">
-                <div class="mini-label">Monthly Expenses</div>
+              <div class="balance-grid-item clickable-kpi" onclick="showOutflowDetailsModal(getSalaryCycleRange())" title="Click to view all Outflow transactions & sub-tags">
+                <div class="mini-label" style="display: flex; align-items: center; justify-content: space-between;">Monthly Expenses <i data-lucide="chevron-right" style="width: 12px; height: 12px; opacity: 0.8;"></i></div>
                 <div id="val-monthly-expenses" class="mini-value">RM 0.00</div>
               </div>
             </div>
@@ -70,12 +70,12 @@
           <div class="dashboard-hero-side">
             <!-- Savings & Investment Row -->
             <div class="secondary-metrics">
-              <div class="metric-pill savings">
-                <span class="pill-label">Total Savings</span>
+              <div class="metric-pill savings clickable-kpi" onclick="showCategoryTypeDetailsModal('Savings', getSalaryCycleRange())" title="Click to view all Savings transactions & sub-tags">
+                <span class="pill-label" style="display: flex; align-items: center; justify-content: space-between;">Total Savings <i data-lucide="chevron-right" style="width: 12px; height: 12px; opacity: 0.8;"></i></span>
                 <span id="val-monthly-savings" class="pill-value">RM 0.00</span>
               </div>
-              <div class="metric-pill investment">
-                <span class="pill-label">Total Invested</span>
+              <div class="metric-pill investment clickable-kpi" onclick="showCategoryTypeDetailsModal('Investment', getSalaryCycleRange())" title="Click to view all Investment transactions & sub-tags">
+                <span class="pill-label" style="display: flex; align-items: center; justify-content: space-between;">Total Invested <i data-lucide="chevron-right" style="width: 12px; height: 12px; opacity: 0.8;"></i></span>
                 <span id="val-monthly-investments" class="pill-value">RM 0.00</span>
               </div>
             </div>
@@ -387,6 +387,6 @@
   </div>
 
   <!-- JavaScript Logic -->
-  <script src="app.js?v=3.4"></script>
+  <script src="app.js?v=3.5"></script>
 </body>
 </html>

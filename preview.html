@@ -11,7 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
   
   <!-- Premium Stylesheets -->
-  <link rel="stylesheet" href="preview.css?v=1.1">
+  <link rel="stylesheet" href="preview.css?v=1.2">
   
   <!-- Lucide Icons CDN -->
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -116,7 +116,7 @@
           </div>
 
           <!-- Card 2: Monthly Inflow -->
-          <div class="kpi-card">
+          <div class="kpi-card clickable-card" onclick="showInflowDetailsModal(getSalaryCycleRange())" title="Click to view detailed Inflow transactions & sub-tags">
             <div class="kpi-card-header">
               <span class="kpi-title">Monthly Income (Inflow)</span>
               <span class="kpi-icon-pill income"><i data-lucide="arrow-down-left"></i></span>
@@ -129,7 +129,7 @@
           </div>
 
           <!-- Card 3: Monthly Expenses & Burn Rate -->
-          <div class="kpi-card">
+          <div class="kpi-card clickable-card" onclick="showOutflowDetailsModal(getSalaryCycleRange())" title="Click to view detailed Outflow transactions & sub-tags">
             <div class="kpi-card-header">
               <span class="kpi-title">Monthly Outflow (Expenses)</span>
               <span class="kpi-icon-pill expense"><i data-lucide="arrow-up-right"></i></span>
@@ -402,6 +402,6 @@
   </div>
 
   <!-- JavaScript Logic -->
-  <script src="preview.js?v=1.1"></script>
+  <script src="preview.js?v=1.2"></script>
 </body>
 </html>
