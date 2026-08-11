@@ -6,7 +6,7 @@
   <title>FinFlow - Personal Finance Tracker</title>
   
   <!-- Premium Stylesheets -->
-  <link rel="stylesheet" href="style.css?v=3.0">
+  <link rel="stylesheet" href="style.css?v=3.2">
   
   <!-- Lucide Icons CDN for sleek vector graphics -->
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -358,8 +358,19 @@
           </div>
         </div>
 
+        <!-- Tag Breakdown Filter Bar -->
+        <div class="modal-tags-breakdown">
+          <div class="modal-tags-label">Filter by Tag:</div>
+          <div id="modal-budget-tags-pills" class="modal-tags-pills">
+            <!-- Dynamically populated tag breakdown pills -->
+          </div>
+        </div>
+
         <div class="modal-tx-section">
-          <h4 class="modal-tx-title">Transactions (<span id="modal-budget-count">0</span>)</h4>
+          <div class="modal-tx-header">
+            <h4 class="modal-tx-title">Transactions (<span id="modal-budget-count">0</span>)</h4>
+            <span id="modal-budget-subtotal" class="modal-tx-subtotal"></span>
+          </div>
           <div id="modal-budget-tx-list" class="modal-tx-list">
             <!-- Dynamically populated transaction cards -->
           </div>
@@ -370,6 +381,6 @@
   </div>
 
   <!-- JavaScript Logic -->
-  <script src="app.js?v=3.1"></script>
+  <script src="app.js?v=3.2"></script>
 </body>
 </html>

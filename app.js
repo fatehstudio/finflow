@@ -1405,44 +1405,144 @@ window.downloadChartCSV = function() {
   showToast("CSV data downloaded!");
 };
 
+function escapeHtml(str) {
+  if (!str) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 // -------------------------------------------------------------
-// Budget Drill-Down Modal Logic
+// Budget Drill-Down Modal Logic (With Tag Breakdown & Filters)
 // -------------------------------------------------------------
-function showBudgetDetailsModal(category, budgetVal, actualVal, cycle) {
+let activeBudgetTagFilter = "ALL";
+
+function showBudgetDetailsModal(category, budgetVal, actualVal, cycle, selectedTag = "ALL") {
   const modal = document.getElementById("budget-modal");
   if (!modal) return;
 
-  // Filter transactions for this category in active salary cycle
-  const categoryTxs = state.transactions.filter(tx => 
+  activeBudgetTagFilter = selectedTag;
+
+  // Filter all transactions for this category in active salary cycle
+  const allCategoryTxs = state.transactions.filter(tx => 
     tx.Type === "Expense" && 
     tx.Category === category && 
     tx.Date >= cycle.startDate && 
     tx.Date <= cycle.endDate
   );
 
-  // Sort by date descending (newest first)
-  categoryTxs.sort((a, b) => new Date(b.Date) - new Date(a.Date));
+  // Calculate tag totals and counts
+  const tagsMap = {};
+  let untaggedTotal = 0;
+  let untaggedCount = 0;
 
-  // Set modal headers and pill values
+  allCategoryTxs.forEach(tx => {
+    const amt = parseFloat(tx.Amount) || 0;
+    if (!tx.Tags || !tx.Tags.trim()) {
+      untaggedTotal += amt;
+      untaggedCount++;
+    } else {
+      const tagsList = tx.Tags.split(",").map(t => t.trim()).filter(Boolean);
+      if (tagsList.length === 0) {
+        untaggedTotal += amt;
+        untaggedCount++;
+      } else {
+        tagsList.forEach(tag => {
+          if (!tagsMap[tag]) {
+            tagsMap[tag] = { total: 0, count: 0 };
+          }
+          tagsMap[tag].total += amt;
+          tagsMap[tag].count++;
+        });
+      }
+    }
+  });
+
+  // Set modal headers and top summary pills
   document.getElementById("modal-budget-category").textContent = `${category} Expenses`;
   document.getElementById("modal-budget-cycle").textContent = `Cycle: ${formatReadableDate(cycle.startDate)} - ${formatReadableDate(cycle.endDate)}`;
   
   document.getElementById("modal-budget-spent").textContent = formatCurrency(actualVal);
   document.getElementById("modal-budget-limit").textContent = formatCurrency(budgetVal);
   document.getElementById("modal-budget-remaining").textContent = formatCurrency(Math.max(budgetVal - actualVal, 0));
-  document.getElementById("modal-budget-count").textContent = categoryTxs.length;
+
+  // Build Tag Breakdown Pills
+  const tagsPillsContainer = document.getElementById("modal-budget-tags-pills");
+  if (tagsPillsContainer) {
+    tagsPillsContainer.innerHTML = "";
+
+    // 1. "All" Pill
+    const allPill = document.createElement("button");
+    allPill.className = `modal-tag-pill ${activeBudgetTagFilter === "ALL" ? "active" : ""}`;
+    allPill.innerHTML = `All <span class="pill-count-badge">${allCategoryTxs.length}</span> • ${formatCurrency(actualVal)}`;
+    allPill.addEventListener("click", () => {
+      showBudgetDetailsModal(category, budgetVal, actualVal, cycle, "ALL");
+    });
+    tagsPillsContainer.appendChild(allPill);
+
+    // 2. Individual Tag Pills
+    Object.keys(tagsMap).sort().forEach(tag => {
+      const tagData = tagsMap[tag];
+      const pill = document.createElement("button");
+      pill.className = `modal-tag-pill ${activeBudgetTagFilter === tag ? "active" : ""}`;
+      pill.innerHTML = `🏷️ ${escapeHtml(tag)} <span class="pill-count-badge">${tagData.count}</span> • ${formatCurrency(tagData.total)}`;
+      pill.addEventListener("click", () => {
+        showBudgetDetailsModal(category, budgetVal, actualVal, cycle, tag);
+      });
+      tagsPillsContainer.appendChild(pill);
+    });
+
+    // 3. "No Tag" / Untagged Pill (if any untagged transactions exist)
+    if (untaggedCount > 0) {
+      const noTagPill = document.createElement("button");
+      noTagPill.className = `modal-tag-pill ${activeBudgetTagFilter === "_NO_TAG_" ? "active" : ""}`;
+      noTagPill.innerHTML = `⚪ No Tag <span class="pill-count-badge">${untaggedCount}</span> • ${formatCurrency(untaggedTotal)}`;
+      noTagPill.addEventListener("click", () => {
+        showBudgetDetailsModal(category, budgetVal, actualVal, cycle, "_NO_TAG_");
+      });
+      tagsPillsContainer.appendChild(noTagPill);
+    }
+  }
+
+  // Filter transactions based on active tag filter
+  let filteredTxs = allCategoryTxs;
+  let filteredSubtotal = actualVal;
+
+  if (activeBudgetTagFilter === "_NO_TAG_") {
+    filteredTxs = allCategoryTxs.filter(tx => !tx.Tags || !tx.Tags.trim());
+    filteredSubtotal = untaggedTotal;
+  } else if (activeBudgetTagFilter !== "ALL") {
+    filteredTxs = allCategoryTxs.filter(tx => {
+      if (!tx.Tags) return false;
+      const tagsList = tx.Tags.split(",").map(t => t.trim().toLowerCase());
+      return tagsList.includes(activeBudgetTagFilter.toLowerCase());
+    });
+    filteredSubtotal = tagsMap[activeBudgetTagFilter] ? tagsMap[activeBudgetTagFilter].total : 0;
+  }
+
+  // Sort by date descending
+  filteredTxs.sort((a, b) => new Date(b.Date) - new Date(a.Date));
+
+  const countEl = document.getElementById("modal-budget-count");
+  if (countEl) countEl.textContent = filteredTxs.length;
+
+  const subtotalEl = document.getElementById("modal-budget-subtotal");
+  if (subtotalEl) subtotalEl.textContent = `Subtotal: ${formatCurrency(filteredSubtotal)}`;
 
   const listContainer = document.getElementById("modal-budget-tx-list");
   listContainer.innerHTML = "";
 
-  if (categoryTxs.length === 0) {
+  if (filteredTxs.length === 0) {
     listContainer.innerHTML = `
       <div class="modal-no-tx">
-        <p>No expenses logged for <b>${category}</b> in this salary cycle.</p>
+        <p>No transactions found for tag <b>${activeBudgetTagFilter === "_NO_TAG_" ? "No Tag" : escapeHtml(activeBudgetTagFilter)}</b>.</p>
       </div>
     `;
   } else {
-    categoryTxs.forEach(tx => {
+    filteredTxs.forEach(tx => {
       const item = document.createElement("div");
       item.className = "modal-tx-item";
 
@@ -1461,7 +1561,7 @@ function showBudgetDetailsModal(category, budgetVal, actualVal, cycle) {
         left.appendChild(notesEl);
       }
 
-      if (tx.Tags) {
+      if (tx.Tags && tx.Tags.trim()) {
         const tagsContainer = document.createElement("div");
         tagsContainer.className = "modal-tx-tags";
         tx.Tags.split(",").forEach(t => {
@@ -1473,6 +1573,13 @@ function showBudgetDetailsModal(category, budgetVal, actualVal, cycle) {
           }
         });
         left.appendChild(tagsContainer);
+      } else {
+        const noTagBadge = document.createElement("span");
+        noTagBadge.className = "tag-badge";
+        noTagBadge.style.opacity = "0.6";
+        noTagBadge.style.fontStyle = "italic";
+        noTagBadge.textContent = "No Tag";
+        left.appendChild(noTagBadge);
       }
 
       const right = document.createElement("div");
@@ -1516,7 +1623,7 @@ function showBudgetDetailsModal(category, budgetVal, actualVal, cycle) {
               updatedActual += (parseFloat(t.Amount) || 0);
             }
           });
-          showBudgetDetailsModal(category, budgetVal, updatedActual, updatedCycle);
+          showBudgetDetailsModal(category, budgetVal, updatedActual, updatedCycle, activeBudgetTagFilter);
         }
       });
       right.appendChild(deleteBtn);
