@@ -114,12 +114,9 @@ document.addEventListener("DOMContentLoaded", () => {
   // Default values
   elements.txDate.value = new Date().toISOString().split("T")[0];
   
-  const now = new Date();
-  const yyyy = now.getFullYear();
-  const mm = String(now.getMonth() + 1).padStart(2, '0');
-  const lastDay = new Date(yyyy, now.getMonth() + 1, 0).getDate();
-  elements.dashStartDate.value = `${yyyy}-${mm}-01`;
-  elements.dashEndDate.value = `${yyyy}-${mm}-${String(lastDay).padStart(2, '0')}`;
+  const cycle = getSalaryCycleRange();
+  elements.dashStartDate.value = cycle.startDate;
+  elements.dashEndDate.value = cycle.endDate;
   
   elements.dashStartDate.addEventListener("change", renderDashboard);
   elements.dashEndDate.addEventListener("change", renderDashboard);
@@ -578,6 +575,40 @@ function formatCurrency(val) {
   return `${sym} ${parseFloat(val).toFixed(2)}`;
 }
 
+// Helper: Calculate Salary Cycle Range (25th of month to 24th of next month)
+function getSalaryCycleRange(refDate = new Date()) {
+  const year = refDate.getFullYear();
+  const month = refDate.getMonth();
+  const day = refDate.getDate();
+
+  if (day >= 25) {
+    // Current month 25th to next month 24th
+    const start = new Date(year, month, 25);
+    const end = new Date(year, month + 1, 24);
+    return {
+      startDate: formatDateToYMD(start),
+      endDate: formatDateToYMD(end),
+      label: end.toLocaleDateString("en-US", { month: "short" })
+    };
+  } else {
+    // Previous month 25th to current month 24th
+    const start = new Date(year, month - 1, 25);
+    const end = new Date(year, month, 24);
+    return {
+      startDate: formatDateToYMD(start),
+      endDate: formatDateToYMD(end),
+      label: end.toLocaleDateString("en-US", { month: "short" })
+    };
+  }
+}
+
+function formatDateToYMD(d) {
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
 // Update UI views
 function updateUI() {
   renderDashboard();
@@ -727,14 +758,20 @@ function renderCashFlowTrendChart() {
     state.chartInstances.trend.destroy();
   }
   
-  // Calculate past 6 calendar months including current
-  const months = [];
+  // Calculate past 6 salary cycles (each starting on 25th and ending on 24th)
+  const cycles = [];
+  const now = new Date();
+  const endMonthOffset = now.getDate() >= 25 ? 1 : 0;
+  
   for (let i = 5; i >= 0; i--) {
-    const d = new Date();
-    d.setMonth(d.getMonth() - i);
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    months.push(`${yyyy}-${mm}`);
+    const endMonthDate = new Date(now.getFullYear(), now.getMonth() + endMonthOffset - i, 24);
+    const startMonthDate = new Date(endMonthDate.getFullYear(), endMonthDate.getMonth() - 1, 25);
+    
+    cycles.push({
+      start: formatDateToYMD(startMonthDate),
+      end: formatDateToYMD(endMonthDate),
+      label: endMonthDate.toLocaleDateString("en-US", { month: "short" })
+    });
   }
   
   const chartData = {
@@ -743,25 +780,19 @@ function renderCashFlowTrendChart() {
   };
   
   state.transactions.forEach(tx => {
-    const txMonth = tx.Date.substring(0, 7); // "YYYY-MM"
-    const mIdx = months.indexOf(txMonth);
-    
-    if (mIdx !== -1) {
-      const amt = parseFloat(tx.Amount) || 0;
-      if (tx.Type === "Income") {
-        chartData.Income[mIdx] += amt;
-      } else if (tx.Type === "Expense") {
-        chartData.Expense[mIdx] += amt;
+    cycles.forEach((cycle, idx) => {
+      if (tx.Date >= cycle.start && tx.Date <= cycle.end) {
+        const amt = parseFloat(tx.Amount) || 0;
+        if (tx.Type === "Income") {
+          chartData.Income[idx] += amt;
+        } else if (tx.Type === "Expense") {
+          chartData.Expense[idx] += amt;
+        }
       }
-    }
+    });
   });
   
-  // Format labels for readable month (e.g. "Jul")
-  const monthLabels = months.map(m => {
-    const [year, month] = m.split("-");
-    const dateObj = new Date(year, parseInt(month) - 1, 1);
-    return dateObj.toLocaleDateString("en-US", { month: "short" });
-  });
+  const monthLabels = cycles.map(c => c.label);
   
   const ctx = canvas.getContext("2d");
   state.chartInstances.trend = new Chart(ctx, {
@@ -805,6 +836,18 @@ function renderCashFlowTrendChart() {
             boxWidth: 10,
             font: { family: 'Quicksand', size: 11, weight: '600' },
             color: '#475569'
+          }
+        },
+        tooltip: {
+          callbacks: {
+            title: function(context) {
+              const idx = context[0].dataIndex;
+              const c = cycles[idx];
+              return `${c.label} (${c.start} to ${c.end})`;
+            },
+            label: function(context) {
+              return ` ${context.dataset.label}: ${formatCurrency(context.raw)}`;
+            }
           }
         }
       }
@@ -953,15 +996,15 @@ function formatReadableDate(dateStr) {
 function renderBudgets() {
   elements.budgetProgressContainer.innerHTML = "";
   
-  const curMonthStr = new Date().toISOString().substring(0, 7); // "YYYY-MM"
+  const cycle = getSalaryCycleRange();
   const expenseCategories = CATEGORIES["Expense"];
   
-  // Calculate expenses grouped by category for current month
+  // Calculate expenses grouped by category for current salary cycle (25th to 24th)
   const actuals = {};
   expenseCategories.forEach(cat => { actuals[cat] = 0; });
   
   state.transactions.forEach(tx => {
-    if (tx.Type === "Expense" && tx.Date.startsWith(curMonthStr)) {
+    if (tx.Type === "Expense" && tx.Date >= cycle.startDate && tx.Date <= cycle.endDate) {
       const amt = parseFloat(tx.Amount) || 0;
       actuals[tx.Category] = (actuals[tx.Category] || 0) + amt;
     }
