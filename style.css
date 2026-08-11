@@ -826,6 +826,32 @@ textarea.form-control {
   color: var(--text-muted);
 }
 
+.budget-subtags-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border);
+}
+
+.budget-subtag-pill {
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.budget-subtag-pill b {
+  color: var(--primary);
+}
+
 /* Budget Editor */
 .budget-editor-card {
   background-color: var(--bg-secondary);

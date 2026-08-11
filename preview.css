@@ -674,6 +674,32 @@ body {
   color: var(--text-secondary);
 }
 
+.meter-subtags-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.08);
+}
+
+.meter-subtag-chip {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.meter-subtag-chip b {
+  color: #a5b4fc;
+}
+
 /* Recent Transaction Live Feed */
 .hub-link {
   font-size: 0.78rem;

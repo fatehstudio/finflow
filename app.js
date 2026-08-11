@@ -1006,14 +1006,34 @@ function renderBudgets() {
   const cycle = getSalaryCycleRange();
   const expenseCategories = CATEGORIES["Expense"];
   
-  // Calculate expenses grouped by category for current salary cycle (25th to 24th)
+  // Calculate expenses and sub-tags grouped by category for current salary cycle (25th to 24th)
   const actuals = {};
-  expenseCategories.forEach(cat => { actuals[cat] = 0; });
+  const categoryTagsMap = {};
+
+  expenseCategories.forEach(cat => { 
+    actuals[cat] = 0; 
+    categoryTagsMap[cat] = {};
+  });
   
   state.transactions.forEach(tx => {
     if (tx.Type === "Expense" && tx.Date >= cycle.startDate && tx.Date <= cycle.endDate) {
       const amt = parseFloat(tx.Amount) || 0;
       actuals[tx.Category] = (actuals[tx.Category] || 0) + amt;
+
+      if (!categoryTagsMap[tx.Category]) categoryTagsMap[tx.Category] = {};
+
+      if (!tx.Tags || !tx.Tags.trim()) {
+        categoryTagsMap[tx.Category]["_NO_TAG_"] = (categoryTagsMap[tx.Category]["_NO_TAG_"] || 0) + amt;
+      } else {
+        const tagsList = tx.Tags.split(",").map(t => t.trim()).filter(Boolean);
+        if (tagsList.length === 0) {
+          categoryTagsMap[tx.Category]["_NO_TAG_"] = (categoryTagsMap[tx.Category]["_NO_TAG_"] || 0) + amt;
+        } else {
+          tagsList.forEach(tag => {
+            categoryTagsMap[tx.Category][tag] = (categoryTagsMap[tx.Category][tag] || 0) + amt;
+          });
+        }
+      }
     }
   });
   
@@ -1027,7 +1047,7 @@ function renderBudgets() {
     
     const actualVal = actuals[cat] || 0;
     const ratio = Math.min((actualVal / budgetVal), 1);
-    const percentage = Math.round(ratio * 100);
+    const percentage = Math.round((actualVal / budgetVal) * 100);
     
     // Choose color code
     let colorClass = "normal";
@@ -1036,7 +1056,25 @@ function renderBudgets() {
     
     const budgetItem = document.createElement("div");
     budgetItem.className = "budget-item";
-    budgetItem.title = `Click to view all ${cat} transactions`;
+    budgetItem.title = `Click to view all ${cat} transactions & sub-tags`;
+
+    // Build Sub-tags chips HTML
+    const tagsObj = categoryTagsMap[cat] || {};
+    let subTagsHtml = "";
+    const tagKeys = Object.keys(tagsObj);
+
+    if (tagKeys.length > 0) {
+      const chips = tagKeys.map(tag => {
+        const tagAmt = tagsObj[tag];
+        const tagPct = actualVal > 0 ? ((tagAmt / actualVal) * 100).toFixed(0) : 0;
+        if (tag === "_NO_TAG_") {
+          return `<span class="budget-subtag-pill">⚪ No Tag: <b>${formatCurrency(tagAmt)}</b> (${tagPct}%)</span>`;
+        }
+        return `<span class="budget-subtag-pill">🏷️ ${escapeHtml(tag)}: <b>${formatCurrency(tagAmt)}</b> (${tagPct}%)</span>`;
+      }).join("");
+
+      subTagsHtml = `<div class="budget-subtags-row">${chips}</div>`;
+    }
     
     budgetItem.innerHTML = `
       <div class="budget-header">
@@ -1053,6 +1091,7 @@ function renderBudgets() {
           <i data-lucide="chevron-right" style="width: 14px; height: 14px; stroke-width: 2.5; color: var(--primary);"></i>
         </span>
       </div>
+      ${subTagsHtml}
     `;
     
     budgetItem.addEventListener("click", () => {

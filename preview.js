@@ -538,7 +538,7 @@ function renderCashFlowRunwayChart() {
 }
 
 // =============================================================
-// 4. Category Budget Meters (With Click Drill-Down)
+// 4. Category Budget Meters (With Sub-Tags Breakdown & Click Drill-Down)
 // =============================================================
 function renderBudgetMeters() {
   const container = document.getElementById("hub-budget-meters-list");
@@ -549,56 +549,99 @@ function renderBudgetMeters() {
   const expenseCategories = CATEGORIES.Expense;
 
   const actuals = {};
+  const categoryTagsMap = {};
+
   expenseCategories.forEach(cat => {
     actuals[cat] = 0;
+    categoryTagsMap[cat] = {};
   });
 
   state.transactions.forEach(tx => {
     if (tx.Type === "Expense" && tx.Date >= cycle.startDate && tx.Date <= cycle.endDate) {
       const amt = parseFloat(tx.Amount) || 0;
       actuals[tx.Category] = (actuals[tx.Category] || 0) + amt;
+
+      if (!categoryTagsMap[tx.Category]) categoryTagsMap[tx.Category] = {};
+
+      if (!tx.Tags || !tx.Tags.trim()) {
+        categoryTagsMap[tx.Category]["_NO_TAG_"] = (categoryTagsMap[tx.Category]["_NO_TAG_"] || 0) + amt;
+      } else {
+        const tagsList = tx.Tags.split(",").map(t => t.trim()).filter(Boolean);
+        if (tagsList.length === 0) {
+          categoryTagsMap[tx.Category]["_NO_TAG_"] = (categoryTagsMap[tx.Category]["_NO_TAG_"] || 0) + amt;
+        } else {
+          tagsList.forEach(tag => {
+            categoryTagsMap[tx.Category][tag] = (categoryTagsMap[tx.Category][tag] || 0) + amt;
+          });
+        }
+      }
     }
   });
 
-  let hasBudgets = false;
+  let hasCards = false;
 
   expenseCategories.forEach(cat => {
     const budgetVal = parseFloat(state.budgets[cat]) || 0;
-    if (budgetVal <= 0) return;
-
-    hasBudgets = true;
     const actualVal = actuals[cat] || 0;
-    const ratio = Math.min(actualVal / budgetVal, 1);
-    const percentage = Math.round((actualVal / budgetVal) * 100);
+
+    // Show if there is either a budget set or active spending
+    if (budgetVal <= 0 && actualVal <= 0) return;
+
+    hasCards = true;
+    const percentage = budgetVal > 0 ? Math.round((actualVal / budgetVal) * 100) : 100;
 
     let statusClass = "normal";
     let statusText = "On Track";
 
-    if (actualVal > budgetVal) {
-      statusClass = "danger";
-      statusText = "Over Budget";
-    } else if (actualVal >= budgetVal * 0.8) {
-      statusClass = "warning";
-      statusText = "Approaching Limit";
+    if (budgetVal > 0) {
+      if (actualVal > budgetVal) {
+        statusClass = "danger";
+        statusText = "Over Budget";
+      } else if (actualVal >= budgetVal * 0.8) {
+        statusClass = "warning";
+        statusText = "Approaching Limit";
+      }
+    } else {
+      statusClass = "normal";
+      statusText = "Tracked";
     }
 
     const card = document.createElement("div");
     card.className = "hub-meter-card";
-    card.title = `Click to inspect all ${cat} transactions & tags`;
+    card.title = `Click to inspect all ${cat} transactions & sub-tags`;
+
+    // Build Sub-tags chips HTML
+    const tagsObj = categoryTagsMap[cat] || {};
+    let subTagsHtml = "";
+    const tagKeys = Object.keys(tagsObj);
+
+    if (tagKeys.length > 0) {
+      const chips = tagKeys.map(tag => {
+        const tagAmt = tagsObj[tag];
+        const tagPct = actualVal > 0 ? ((tagAmt / actualVal) * 100).toFixed(0) : 0;
+        if (tag === "_NO_TAG_") {
+          return `<span class="meter-subtag-chip">⚪ No Tag: <b>${formatCurrency(tagAmt)}</b> (${tagPct}%)</span>`;
+        }
+        return `<span class="meter-subtag-chip">🏷️ ${escapeHtml(tag)}: <b>${formatCurrency(tagAmt)}</b> (${tagPct}%)</span>`;
+      }).join("");
+
+      subTagsHtml = `<div class="meter-subtags-row">${chips}</div>`;
+    }
 
     card.innerHTML = `
       <div class="meter-header">
         <span class="meter-category">${cat}</span>
-        <span class="meter-status-badge ${statusClass}">${statusText} (${percentage}%)</span>
+        <span class="meter-status-badge ${statusClass}">${statusText} ${budgetVal > 0 ? `(${percentage}%)` : ""}</span>
       </div>
       <div class="meter-bar-track">
-        <div class="meter-bar-fill ${statusClass}" style="width: ${Math.min(percentage, 100)}%"></div>
+        <div class="meter-bar-fill ${statusClass}" style="width: ${budgetVal > 0 ? Math.min(percentage, 100) : 100}%"></div>
       </div>
       <div class="meter-footer">
         <span>Spent: <b>${formatCurrency(actualVal)}</b></span>
-        <span>Budget: <b>${formatCurrency(budgetVal)}</b></span>
-        <span>Remaining: <b>${formatCurrency(Math.max(budgetVal - actualVal, 0))}</b></span>
+        ${budgetVal > 0 ? `<span>Budget: <b>${formatCurrency(budgetVal)}</b></span>` : ""}
+        ${budgetVal > 0 ? `<span>Remaining: <b>${formatCurrency(Math.max(budgetVal - actualVal, 0))}</b></span>` : `<span>No limit set</span>`}
       </div>
+      ${subTagsHtml}
     `;
 
     card.addEventListener("click", () => {
@@ -608,10 +651,10 @@ function renderBudgetMeters() {
     container.appendChild(card);
   });
 
-  if (!hasBudgets) {
+  if (!hasCards) {
     container.innerHTML = `
       <div class="modal-no-tx">
-        <p>No category budgets configured yet.</p>
+        <p>No category budgets configured or expenses logged yet.</p>
         <p style="font-size: 0.75rem; margin-top: 4px;">Set monthly limits in the Standard App's Budgets tab.</p>
       </div>
     `;
