@@ -6,7 +6,7 @@
   <title>FinFlow - Personal Finance Tracker</title>
   
   <!-- Premium Stylesheets -->
-  <link rel="stylesheet" href="style.css?v=3.5">
+  <link rel="stylesheet" href="style.css?v=3.6">
   
   <!-- Lucide Icons CDN for sleek vector graphics -->
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -288,6 +288,18 @@
               <input type="text" id="settings-currency" class="form-control" value="RM" maxlength="5">
             </div>
 
+            <!-- Default Dashboard Style -->
+            <div class="form-group">
+              <label for="settings-default-view">Default Dashboard Style</label>
+              <select id="settings-default-view" class="form-control">
+                <option value="standard">Standard FinFlow (Pastel Mobile & Desktop)</option>
+                <option value="assethub">Asset Hub Pro (Dark Wealth & Analytics Dashboard)</option>
+              </select>
+              <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; line-height: 1.3;">
+                Choose which dashboard automatically opens when you visit FinFlow. You can switch between them anytime using the switcher button.
+              </p>
+            </div>
+
             <button type="submit" id="btn-save-settings" class="btn-primary">
               <i data-lucide="check"></i> Save Settings
             </button>
@@ -387,6 +399,6 @@
   </div>
 
   <!-- JavaScript Logic -->
-  <script src="app.js?v=3.5"></script>
+  <script src="app.js?v=3.6"></script>
 </body>
 </html>

@@ -97,6 +97,7 @@ const elements = {
   // Settings View Elements
   settingsApiUrl: document.getElementById("settings-api-url"),
   settingsCurrency: document.getElementById("settings-currency"),
+  settingsDefaultView: document.getElementById("settings-default-view"),
   formSettings: document.getElementById("form-settings"),
   btnSyncNow: document.getElementById("btn-sync-now"),
   btnClearLocal: document.getElementById("btn-clear-local")
@@ -105,6 +106,13 @@ const elements = {
 // Initialize Application
 document.addEventListener("DOMContentLoaded", () => {
   loadLocalData();
+
+  // If user configured Asset Hub Pro as default, and didn't specify ?mode=standard in URL, redirect
+  if (state.settings.defaultView === "assethub" && !window.location.search.includes("mode=standard")) {
+    window.location.replace("preview.html");
+    return;
+  }
+
   setupNavigation();
   setupFormEventListeners();
   setupHistoryFilters();
@@ -158,6 +166,9 @@ function loadLocalData() {
   // Populate settings form inputs
   elements.settingsApiUrl.value = state.settings.apiUrl || "";
   elements.settingsCurrency.value = state.settings.currencySymbol || "RM";
+  if (elements.settingsDefaultView) {
+    elements.settingsDefaultView.value = state.settings.defaultView || "standard";
+  }
 }
 
 // Save state to localStorage
@@ -518,9 +529,11 @@ function setupSettingsForm() {
     
     const url = elements.settingsApiUrl.value.trim();
     const currency = elements.settingsCurrency.value.trim();
+    const defaultView = elements.settingsDefaultView ? elements.settingsDefaultView.value : "standard";
     
     state.settings.apiUrl = url;
     state.settings.currencySymbol = currency;
+    state.settings.defaultView = defaultView;
     
     saveStateToLocal();
     showToast("Settings saved!");
@@ -529,7 +542,8 @@ function setupSettingsForm() {
       // Sync settings & custom tags
       const settingsToSave = {
         currencySymbol: currency,
-        customTags: state.customTags.join(",")
+        customTags: state.customTags.join(","),
+        defaultView: defaultView
       };
       postToSheets("saveSettings", { settings: settingsToSave })
         .then(() => syncWithSheets(true))
