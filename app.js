@@ -1472,6 +1472,27 @@ function showBudgetDetailsModal(category, budgetVal, actualVal, cycle) {
       });
       right.appendChild(editBtn);
 
+      const deleteBtn = document.createElement("button");
+      deleteBtn.className = "tx-delete-btn";
+      deleteBtn.title = "Delete Transaction";
+      deleteBtn.innerHTML = `<i data-lucide="trash-2" style="width: 15px; height: 15px;"></i>`;
+      deleteBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (confirm("Delete this transaction?")) {
+          deleteTransaction(tx.id);
+          // Recalculate actual spent for this category and refresh modal
+          const updatedCycle = getSalaryCycleRange();
+          let updatedActual = 0;
+          state.transactions.forEach(t => {
+            if (t.Type === "Expense" && t.Category === category && t.Date >= updatedCycle.startDate && t.Date <= updatedCycle.endDate) {
+              updatedActual += (parseFloat(t.Amount) || 0);
+            }
+          });
+          showBudgetDetailsModal(category, budgetVal, updatedActual, updatedCycle);
+        }
+      });
+      right.appendChild(deleteBtn);
+
       item.appendChild(left);
       item.appendChild(right);
       listContainer.appendChild(item);
