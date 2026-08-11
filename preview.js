@@ -426,7 +426,7 @@ function downloadHubDonutImage() {
   const url = tempCanvas.toDataURL("image/png");
   const a = document.createElement("a");
   a.href = url;
-  a.download = `finflow_asset_hub_distribution.png`;
+  a.download = `finflow_finance_hub_distribution.png`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);

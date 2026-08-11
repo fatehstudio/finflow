@@ -107,8 +107,8 @@ const elements = {
 document.addEventListener("DOMContentLoaded", () => {
   loadLocalData();
 
-  // If user configured Asset Hub Pro as default, and didn't specify ?mode=standard in URL, redirect
-  if (state.settings.defaultView === "assethub" && !window.location.search.includes("mode=standard")) {
+  // If user configured Finance Hub Pro as default, and didn't specify ?mode=standard in URL, redirect
+  if ((state.settings.defaultView === "financehub" || state.settings.defaultView === "assethub") && !window.location.search.includes("mode=standard")) {
     window.location.replace("preview.html");
     return;
   }
