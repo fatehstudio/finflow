@@ -440,7 +440,7 @@ function downloadHubDonutImage() {
 // =============================================================
 // 3. Cash Flow Runway Trend Chart (Past 6 Cycles)
 // =============================================================
-function renderCashFlowTrendChart() {
+function renderCashFlowRunwayChart() {
   const canvas = document.getElementById("hub-chart-trend");
   if (!canvas) return;
   const ctx = canvas.getContext("2d");
