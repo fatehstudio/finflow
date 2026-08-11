@@ -6,7 +6,7 @@
   <title>FinFlow - Personal Finance Tracker</title>
   
   <!-- Premium Stylesheets -->
-  <link rel="stylesheet" href="style.css?v=2.8">
+  <link rel="stylesheet" href="style.css?v=2.9">
   
   <!-- Lucide Icons CDN for sleek vector graphics -->
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -332,9 +332,44 @@
       <button class="toast-close" onclick="document.getElementById('toast').classList.remove('show')">✕</button>
     </div>
 
+    <!-- Budget Breakdown Drill-down Modal -->
+    <div id="budget-modal" class="modal-overlay" onclick="if(event.target === this) closeBudgetModal()">
+      <div class="modal-card">
+        <div class="modal-header">
+          <div class="modal-title-group">
+            <h3 id="modal-budget-category">Category Expenses</h3>
+            <span id="modal-budget-cycle" class="modal-subtitle">Salary Cycle</span>
+          </div>
+          <button id="modal-budget-close" class="modal-close-btn" onclick="closeBudgetModal()">✕</button>
+        </div>
+
+        <div class="modal-summary-pills">
+          <div class="modal-pill spent">
+            <span class="pill-label">Spent</span>
+            <span id="modal-budget-spent" class="pill-value">RM 0.00</span>
+          </div>
+          <div class="modal-pill target">
+            <span class="pill-label">Budget</span>
+            <span id="modal-budget-limit" class="pill-value">RM 0.00</span>
+          </div>
+          <div class="modal-pill remaining">
+            <span class="pill-label">Remaining</span>
+            <span id="modal-budget-remaining" class="pill-value">RM 0.00</span>
+          </div>
+        </div>
+
+        <div class="modal-tx-section">
+          <h4 class="modal-tx-title">Transactions (<span id="modal-budget-count">0</span>)</h4>
+          <div id="modal-budget-tx-list" class="modal-tx-list">
+            <!-- Dynamically populated transaction cards -->
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <!-- JavaScript Logic -->
-  <script src="app.js?v=2.8"></script>
+  <script src="app.js?v=2.9"></script>
 </body>
 </html>

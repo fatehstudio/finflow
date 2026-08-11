@@ -1029,6 +1029,7 @@ function renderBudgets() {
     
     const budgetItem = document.createElement("div");
     budgetItem.className = "budget-item";
+    budgetItem.title = `Click to view all ${cat} transactions`;
     
     budgetItem.innerHTML = `
       <div class="budget-header">
@@ -1040,9 +1041,16 @@ function renderBudgets() {
       </div>
       <div class="budget-footer">
         <span>${percentage}% spent</span>
-        <span>${formatCurrency(Math.max(budgetVal - actualVal, 0))} remaining</span>
+        <span style="display: flex; align-items: center; gap: 4px;">
+          ${formatCurrency(Math.max(budgetVal - actualVal, 0))} remaining 
+          <i data-lucide="chevron-right" style="width: 14px; height: 14px; stroke-width: 2.5; color: var(--primary);"></i>
+        </span>
       </div>
     `;
+    
+    budgetItem.addEventListener("click", () => {
+      showBudgetDetailsModal(cat, budgetVal, actualVal, cycle);
+    });
     
     elements.budgetProgressContainer.appendChild(budgetItem);
   });
@@ -1373,4 +1381,121 @@ window.downloadChartCSV = function() {
   document.body.removeChild(a);
   showToast("CSV data downloaded!");
 };
+
+// -------------------------------------------------------------
+// Budget Drill-Down Modal Logic
+// -------------------------------------------------------------
+function showBudgetDetailsModal(category, budgetVal, actualVal, cycle) {
+  const modal = document.getElementById("budget-modal");
+  if (!modal) return;
+
+  // Filter transactions for this category in active salary cycle
+  const categoryTxs = state.transactions.filter(tx => 
+    tx.Type === "Expense" && 
+    tx.Category === category && 
+    tx.Date >= cycle.startDate && 
+    tx.Date <= cycle.endDate
+  );
+
+  // Sort by date descending (newest first)
+  categoryTxs.sort((a, b) => new Date(b.Date) - new Date(a.Date));
+
+  // Set modal headers and pill values
+  document.getElementById("modal-budget-category").textContent = `${category} Expenses`;
+  document.getElementById("modal-budget-cycle").textContent = `Cycle: ${formatReadableDate(cycle.startDate)} - ${formatReadableDate(cycle.endDate)}`;
+  
+  document.getElementById("modal-budget-spent").textContent = formatCurrency(actualVal);
+  document.getElementById("modal-budget-limit").textContent = formatCurrency(budgetVal);
+  document.getElementById("modal-budget-remaining").textContent = formatCurrency(Math.max(budgetVal - actualVal, 0));
+  document.getElementById("modal-budget-count").textContent = categoryTxs.length;
+
+  const listContainer = document.getElementById("modal-budget-tx-list");
+  listContainer.innerHTML = "";
+
+  if (categoryTxs.length === 0) {
+    listContainer.innerHTML = `
+      <div class="modal-no-tx">
+        <p>No expenses logged for <b>${category}</b> in this salary cycle.</p>
+      </div>
+    `;
+  } else {
+    categoryTxs.forEach(tx => {
+      const item = document.createElement("div");
+      item.className = "modal-tx-item";
+
+      const left = document.createElement("div");
+      left.className = "modal-tx-left";
+
+      const dateEl = document.createElement("div");
+      dateEl.className = "modal-tx-date";
+      dateEl.textContent = formatReadableDate(tx.Date);
+      left.appendChild(dateEl);
+
+      if (tx.Notes) {
+        const notesEl = document.createElement("div");
+        notesEl.className = "modal-tx-notes";
+        notesEl.textContent = tx.Notes;
+        left.appendChild(notesEl);
+      }
+
+      if (tx.Tags) {
+        const tagsContainer = document.createElement("div");
+        tagsContainer.className = "modal-tx-tags";
+        tx.Tags.split(",").forEach(t => {
+          if (t.trim()) {
+            const badge = document.createElement("span");
+            badge.className = "tag-badge";
+            badge.textContent = t.trim();
+            tagsContainer.appendChild(badge);
+          }
+        });
+        left.appendChild(tagsContainer);
+      }
+
+      const right = document.createElement("div");
+      right.className = "modal-tx-right";
+
+      const amtEl = document.createElement("span");
+      amtEl.className = "modal-tx-amount";
+      amtEl.textContent = `-${formatCurrency(tx.Amount)}`;
+      right.appendChild(amtEl);
+
+      const editBtn = document.createElement("button");
+      editBtn.className = "tx-delete-btn";
+      editBtn.style.color = "var(--primary)";
+      editBtn.title = "Edit Transaction";
+      editBtn.innerHTML = `<i data-lucide="pencil" style="width: 15px; height: 15px;"></i>`;
+      editBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        closeBudgetModal();
+        startEditTransaction(tx);
+      });
+      right.appendChild(editBtn);
+
+      item.appendChild(left);
+      item.appendChild(right);
+      listContainer.appendChild(item);
+    });
+  }
+
+  modal.classList.add("show");
+  lucide.createIcons();
+}
+
+function closeBudgetModal() {
+  const modal = document.getElementById("budget-modal");
+  if (modal) {
+    modal.classList.remove("show");
+  }
+}
+
+window.showBudgetDetailsModal = showBudgetDetailsModal;
+window.closeBudgetModal = closeBudgetModal;
+
+// Keyboard accessibility: ESC key to close modal
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    closeBudgetModal();
+  }
+});
 
