@@ -1055,18 +1055,18 @@ function renderBudgets() {
   
   expenseCategories.forEach(cat => {
     const budgetVal = parseFloat(state.budgets[cat]) || 0;
-    if (budgetVal <= 0) return; // skip showing categories without a budget
+    const actualVal = actuals[cat] || 0;
     
     hasBudgetsConfigured = true;
     
-    const actualVal = actuals[cat] || 0;
-    const ratio = Math.min((actualVal / budgetVal), 1);
-    const percentage = Math.round((actualVal / budgetVal) * 100);
+    const percentage = budgetVal > 0 ? Math.round((actualVal / budgetVal) * 100) : (actualVal > 0 ? 100 : 0);
     
     // Choose color code
     let colorClass = "normal";
-    if (ratio >= 1.0) colorClass = "danger";
-    else if (ratio >= 0.8) colorClass = "warning";
+    if (budgetVal > 0) {
+      if (actualVal > budgetVal) colorClass = "danger";
+      else if (actualVal >= budgetVal * 0.8) colorClass = "warning";
+    }
     
     const budgetItem = document.createElement("div");
     budgetItem.className = "budget-item";
@@ -1093,15 +1093,15 @@ function renderBudgets() {
     budgetItem.innerHTML = `
       <div class="budget-header">
         <span class="budget-category">${cat}</span>
-        <span class="budget-amounts">${formatCurrency(actualVal)} / ${formatCurrency(budgetVal)}</span>
+        <span class="budget-amounts">${formatCurrency(actualVal)} / ${budgetVal > 0 ? formatCurrency(budgetVal) : "No Limit"}</span>
       </div>
       <div class="budget-bar-bg">
-        <div class="budget-bar-fill ${colorClass}" style="width: ${percentage}%"></div>
+        <div class="budget-bar-fill ${colorClass}" style="width: ${budgetVal > 0 ? Math.min(percentage, 100) : (actualVal > 0 ? 100 : 0)}%"></div>
       </div>
       <div class="budget-footer">
-        <span>${percentage}% spent</span>
+        <span>${budgetVal > 0 ? `${percentage}% spent` : (actualVal > 0 ? "Tracked (No Limit)" : "No Spending")}</span>
         <span style="display: flex; align-items: center; gap: 4px;">
-          ${formatCurrency(Math.max(budgetVal - actualVal, 0))} remaining 
+          ${budgetVal > 0 ? `${formatCurrency(Math.max(budgetVal - actualVal, 0))} remaining` : "-"}
           <i data-lucide="chevron-right" style="width: 14px; height: 14px; stroke-width: 2.5; color: var(--primary);"></i>
         </span>
       </div>
@@ -1114,17 +1114,6 @@ function renderBudgets() {
     
     elements.budgetProgressContainer.appendChild(budgetItem);
   });
-  
-  if (!hasBudgetsConfigured) {
-    elements.budgetProgressContainer.innerHTML = `
-      <div class="no-transactions" style="padding: 24px 0;">
-        <i data-lucide="info" style="margin-bottom: 8px; opacity: 0.6;"></i>
-        <p>No budgets configured yet.</p>
-        <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">Use the editor below to set category budgets.</p>
-      </div>
-    `;
-    lucide.createIcons();
-  }
 }
 
 // -------------------------------------------------------------

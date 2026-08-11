@@ -341,25 +341,18 @@ function renderDonutChart() {
     activeAmounts.push(1);
   }
 
-  // Populate Pill Badges
+  // Calculate percentage labels for interactive slashable legend
+  const labelsWithPct = activeCategories.map((cat, idx) => {
+    if (cat === "No Expenses Yet") return cat;
+    const amt = activeAmounts[idx];
+    const pct = totalExpense > 0 ? ((amt / totalExpense) * 100).toFixed(1) : 0;
+    return `${cat} (${pct}%)`;
+  });
+
+  // Empty pill container as Chart.js interactive legend provides native click-to-slash
   const pillsContainer = document.getElementById("hub-donut-legend-pills");
   if (pillsContainer) {
     pillsContainer.innerHTML = "";
-    activeCategories.forEach((cat, idx) => {
-      if (cat === "No Expenses Yet") return;
-      const amt = activeAmounts[idx];
-      const pct = totalExpense > 0 ? ((amt / totalExpense) * 100).toFixed(1) : 0;
-      const color = colorPalette[idx % colorPalette.length];
-
-      const pill = document.createElement("div");
-      pill.className = "donut-cat-pill";
-      pill.innerHTML = `
-        <span class="color-dot" style="background: ${color}"></span>
-        <span>${cat}</span>
-        <b style="color: ${color}">${pct}%</b>
-      `;
-      pillsContainer.appendChild(pill);
-    });
   }
 
   if (donutChartInstance) {
@@ -369,7 +362,7 @@ function renderDonutChart() {
   donutChartInstance = new Chart(ctx, {
     type: "doughnut",
     data: {
-      labels: activeCategories,
+      labels: labelsWithPct,
       datasets: [
         {
           data: activeAmounts,
@@ -386,9 +379,21 @@ function renderDonutChart() {
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      cutout: "72%",
+      cutout: "68%",
       plugins: {
-        legend: { display: false },
+        legend: {
+          display: activeCategories[0] !== "No Expenses Yet",
+          position: "bottom",
+          labels: {
+            boxWidth: 12,
+            boxHeight: 12,
+            usePointStyle: true,
+            pointStyle: "circle",
+            padding: 12,
+            color: "#cbd5e1",
+            font: { family: "'Plus Jakarta Sans', sans-serif", size: 11, weight: "600" }
+          }
+        },
         tooltip: {
           backgroundColor: "#1e293b",
           titleColor: "#ffffff",
@@ -400,8 +405,10 @@ function renderDonutChart() {
             label: function (ctx) {
               if (ctx.label === "No Expenses Yet") return "No data";
               const val = ctx.raw || 0;
-              const pct = totalExpense > 0 ? ((val / totalExpense) * 100).toFixed(1) : 0;
-              return ` ${ctx.label}: ${formatCurrency(val)} (${pct}%)`;
+              const cleanLabel = ctx.label.split(" (")[0];
+              const total = ctx.dataset.data.reduce((acc, v, i) => (donutChartInstance && donutChartInstance.getDataVisibility(i)) ? acc + v : acc, 0);
+              const pct = total > 0 ? ((val / total) * 100).toFixed(1) : 0;
+              return ` ${cleanLabel}: ${formatCurrency(val)} (${pct}%)`;
             }
           }
         }
@@ -419,48 +426,45 @@ function downloadHubDonutImage() {
   tempCanvas.height = canvas.height;
   const tempCtx = tempCanvas.getContext("2d");
 
-  tempCtx.fillStyle = "#0f172a";
+  tempCtx.fillStyle = "#111827";
   tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
   tempCtx.drawImage(canvas, 0, 0);
 
-  const url = tempCanvas.toDataURL("image/png");
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `finflow_finance_hub_distribution.png`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  showToast("Chart image downloaded!");
+  const link = document.createElement("a");
+  link.download = `finflow-expenses-distribution-${formatDateToYMD(new Date())}.png`;
+  link.href = tempCanvas.toDataURL("image/png");
+  link.click();
+  showToast("Expenses Donut chart exported successfully!", "success");
 }
 
 // =============================================================
-// 3. Cash Flow Runway Trend (6 Salary Cycles)
+// 3. Cash Flow Runway Trend Chart (Past 6 Cycles)
 // =============================================================
-function renderCashFlowRunwayChart() {
-  const ctx = document.getElementById("hub-chart-trend");
-  if (!ctx) return;
+function renderCashFlowTrendChart() {
+  const canvas = document.getElementById("hub-chart-trend");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
 
+  const today = new Date();
   const cycleLabels = [];
   const cycleRanges = [];
   const incomeSeries = [];
   const expenseSeries = [];
 
-  const today = new Date();
-
-  // Generate past 6 salary cycles
   for (let i = 5; i >= 0; i--) {
-    const cycleDate = new Date(today.getFullYear(), today.getMonth() - i, today.getDate());
-    const cycle = getSalaryCycleRange(cycleDate);
+    const d = new Date(today.getFullYear(), today.getMonth() - i, 15);
+    const c = getSalaryCycleRange(d);
 
-    const monthName = cycle.endDateObj.toLocaleString("en-US", { month: "short" });
-    cycleLabels.push(monthName);
-    cycleRanges.push(`${cycle.startDate} to ${cycle.endDate}`);
+    const startM = new Date(c.startDate).toLocaleDateString("en-US", { month: "short" });
+    const endM = new Date(c.endDate).toLocaleDateString("en-US", { month: "short" });
+    cycleLabels.push(`${startM}-${endM}`);
+    cycleRanges.push(`${formatReadableDate(c.startDate)} - ${formatReadableDate(c.endDate)}`);
 
     let income = 0;
     let expense = 0;
 
     state.transactions.forEach(tx => {
-      if (tx.Date >= cycle.startDate && tx.Date <= cycle.endDate) {
+      if (tx.Date >= c.startDate && tx.Date <= c.endDate) {
         const amt = parseFloat(tx.Amount) || 0;
         if (tx.Type === "Income") income += amt;
         else if (tx.Type === "Expense") expense += amt;
@@ -538,7 +542,7 @@ function renderCashFlowRunwayChart() {
 }
 
 // =============================================================
-// 4. Category Budget Meters (With Sub-Tags Breakdown & Click Drill-Down)
+// 4. Category Budget Meters (Lists All Categories With Sub-Tags & Click Drill-Down)
 // =============================================================
 function renderBudgetMeters() {
   const container = document.getElementById("hub-budget-meters-list");
@@ -584,11 +588,8 @@ function renderBudgetMeters() {
     const budgetVal = parseFloat(state.budgets[cat]) || 0;
     const actualVal = actuals[cat] || 0;
 
-    // Show if there is either a budget set or active spending
-    if (budgetVal <= 0 && actualVal <= 0) return;
-
     hasCards = true;
-    const percentage = budgetVal > 0 ? Math.round((actualVal / budgetVal) * 100) : 100;
+    const percentage = budgetVal > 0 ? Math.round((actualVal / budgetVal) * 100) : (actualVal > 0 ? 100 : 0);
 
     let statusClass = "normal";
     let statusText = "On Track";
@@ -602,8 +603,13 @@ function renderBudgetMeters() {
         statusText = "Approaching Limit";
       }
     } else {
-      statusClass = "normal";
-      statusText = "Tracked";
+      if (actualVal > 0) {
+        statusClass = "normal";
+        statusText = "Tracked";
+      } else {
+        statusClass = "normal";
+        statusText = "No Spending";
+      }
     }
 
     const card = document.createElement("div");
@@ -634,12 +640,12 @@ function renderBudgetMeters() {
         <span class="meter-status-badge ${statusClass}">${statusText} ${budgetVal > 0 ? `(${percentage}%)` : ""}</span>
       </div>
       <div class="meter-bar-track">
-        <div class="meter-bar-fill ${statusClass}" style="width: ${budgetVal > 0 ? Math.min(percentage, 100) : 100}%"></div>
+        <div class="meter-bar-fill ${statusClass}" style="width: ${budgetVal > 0 ? Math.min(percentage, 100) : (actualVal > 0 ? 100 : 0)}%"></div>
       </div>
       <div class="meter-footer">
         <span>Spent: <b>${formatCurrency(actualVal)}</b></span>
-        ${budgetVal > 0 ? `<span>Budget: <b>${formatCurrency(budgetVal)}</b></span>` : ""}
-        ${budgetVal > 0 ? `<span>Remaining: <b>${formatCurrency(Math.max(budgetVal - actualVal, 0))}</b></span>` : `<span>No limit set</span>`}
+        <span>Budget: <b>${budgetVal > 0 ? formatCurrency(budgetVal) : "No Limit"}</b></span>
+        <span>Remaining: <b>${budgetVal > 0 ? formatCurrency(Math.max(budgetVal - actualVal, 0)) : "-"}</b></span>
       </div>
       ${subTagsHtml}
     `;
