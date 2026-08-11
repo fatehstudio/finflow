@@ -4,22 +4,33 @@
  */
 
 const CATEGORIES = {
-  Income: ["Salary", "Freelance", "Investment", "Gift", "Other"],
   Expense: [
-    "Food",
-    "Transport",
-    "Utilities",
-    "Entertainment",
-    "Shopping",
-    "Health",
-    "Fateh",
-    "Loan",
-    "Ummi",
-    "Other"
+    "Food", "Drinks", "Fuel", "Toll / Parking", "Bills", "House", 
+    "Shopping", "Personal", "Healthcare", "Education", "Entertainment", "Charity / Zakat", "Fateh", "Loan", "Ummi", "Travel", "Others"
   ],
-  Savings: ["Emergency", "Tabung", "Retirement", "Travel", "Other"],
-  Investment: ["Stocks", "Crypto", "Real Estate", "Mutual Funds", "Other"]
+  Income: [
+    "Salary", "Allowance", "Bonus", "Dividend", "Rumah Sewa", "Others"
+  ],
+  Savings: [
+    "ASB", "Tabung Haji", "Bank Savings", "Emergency Fund"
+  ],
+  Investment: [
+    "Bursa Malaysia", "IPO", "Unit Trust", "Gold", "Others"
+  ]
 };
+
+function getAllExpenseCategories() {
+  const cats = new Set(CATEGORIES.Expense);
+  if (state.transactions && Array.isArray(state.transactions)) {
+    state.transactions.forEach(tx => {
+      if (tx.Type === "Expense" && tx.Category) cats.add(tx.Category);
+    });
+  }
+  if (state.budgets) {
+    Object.keys(state.budgets).forEach(c => cats.add(c));
+  }
+  return Array.from(cats);
+}
 
 // Global App State
 const state = {
@@ -295,11 +306,13 @@ function renderExecutiveKPIs() {
 // 2. Asset / Expense Allocation Donut Chart
 // =============================================================
 function renderDonutChart() {
-  const ctx = document.getElementById("hub-chart-donut");
-  if (!ctx) return;
+  const canvas = document.getElementById("hub-chart-donut");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
 
   const cycle = getSalaryCycleRange();
-  const expenseCategories = CATEGORIES.Expense;
+  const expenseCategories = getAllExpenseCategories();
+
   const categoryTotals = {};
   expenseCategories.forEach(cat => {
     categoryTotals[cat] = 0;
@@ -550,7 +563,7 @@ function renderBudgetMeters() {
   container.innerHTML = "";
 
   const cycle = getSalaryCycleRange();
-  const expenseCategories = CATEGORIES.Expense;
+  const expenseCategories = getAllExpenseCategories();
 
   const actuals = {};
   const categoryTagsMap = {};
@@ -794,7 +807,7 @@ function renderMoMComparison() {
   const currentCycle = getSalaryCycleRange(currDate);
   const prevCycle = getSalaryCycleRange(prevDate);
 
-  const expenseCategories = CATEGORIES.Expense;
+  const expenseCategories = getAllExpenseCategories();
   const currentActuals = {};
   const prevActuals = {};
 
@@ -848,33 +861,27 @@ function renderMoMComparison() {
     }
   });
 
-  if (maxIncreaseCat && maxIncreaseAmt > 0) {
-    document.getElementById("mom-val-top-increase").textContent = `${maxIncreaseCat} (+${formatCurrency(maxIncreaseAmt)})`;
-    document.getElementById("mom-sub-top-increase").textContent = `Increased from ${formatCurrency(prevActuals[maxIncreaseCat])} to ${formatCurrency(currentActuals[maxIncreaseCat])}`;
-  } else {
-    document.getElementById("mom-val-top-increase").textContent = "None";
-    document.getElementById("mom-sub-top-increase").textContent = "No category increased";
-  }
+  document.getElementById("mom-val-top-increase").textContent = maxIncreaseCat
+    ? `${maxIncreaseCat} (+${formatCurrency(maxIncreaseAmt)})`
+    : "None";
+  document.getElementById("mom-sub-top-increase").textContent = `Increased from ${formatCurrency(prevActuals[maxIncreaseCat] || 0)} to ${formatCurrency(currentActuals[maxIncreaseCat] || 0)}`;
 
-  if (maxSavedCat && maxSavedAmt < 0) {
-    document.getElementById("mom-val-top-saved").textContent = `${maxSavedCat} (-${formatCurrency(Math.abs(maxSavedAmt))})`;
-    document.getElementById("mom-sub-top-saved").textContent = `Reduced from ${formatCurrency(prevActuals[maxSavedCat])} to ${formatCurrency(currentActuals[maxSavedCat])}`;
-  } else {
-    document.getElementById("mom-val-top-saved").textContent = "None";
-    document.getElementById("mom-sub-top-saved").textContent = "No category reduced";
-  }
+  document.getElementById("mom-val-top-saved").textContent = maxSavedCat
+    ? `${maxSavedCat} (${formatCurrency(maxSavedAmt)})`
+    : "None";
+  document.getElementById("mom-sub-top-saved").textContent = `Reduced from ${formatCurrency(prevActuals[maxSavedCat] || 0)} to ${formatCurrency(currentActuals[maxSavedCat] || 0)}`;
 
   // Populate Table
   const tbody = document.getElementById("mom-table-body");
   tbody.innerHTML = "";
 
   expenseCategories.forEach(cat => {
-    const curr = currentActuals[cat];
-    const prev = prevActuals[cat];
+    const curr = currentActuals[cat] || 0;
+    const prev = prevActuals[cat] || 0;
     if (curr === 0 && prev === 0) return; // skip empty
 
     const delta = curr - prev;
-    const pct = prev > 0 ? ((delta / prev) * 100).toFixed(1) : curr > 0 ? "+100%" : "0.0%";
+    const pct = prev > 0 ? ((delta / prev) * 100).toFixed(1) : curr > 0 ? "New" : "0.0";
 
     let badgeClass = "neutral";
     let statusLabel = "Unchanged";
@@ -910,7 +917,7 @@ function renderStackedCategoriesChart() {
 
   const cycleLabels = [];
   const today = new Date();
-  const expenseCategories = CATEGORIES.Expense;
+  const expenseCategories = getAllExpenseCategories();
   const datasetsMap = {};
 
   const colors = [
@@ -1948,13 +1955,16 @@ function syncWithSheets(interactive = false) {
 
   const statusPill = document.getElementById("hub-status-pill");
   const statusText = document.getElementById("hub-status-text");
-  statusPill.className = "hub-status-pill disconnected";
-  statusText.textContent = "Syncing...";
+  if (statusPill) statusPill.className = "hub-status-pill disconnected";
+  if (statusText) statusText.textContent = "Syncing...";
 
   fetch(`${state.settings.apiUrl}?action=getDashboardData`)
-    .then(res => res.json())
+    .then(res => {
+      if (!res.ok) throw new Error("Network response not OK");
+      return res.json();
+    })
     .then(response => {
-      if (response.status === "success") {
+      if ((response.success || response.status === "success") && response.data) {
         const serverData = response.data;
 
         if (serverData.settings) {
@@ -1980,16 +1990,18 @@ function syncWithSheets(interactive = false) {
         saveStateToLocal();
         updateHubUI();
 
-        statusPill.className = "hub-status-pill connected";
-        statusText.textContent = "Live Synced";
+        if (statusPill) statusPill.className = "hub-status-pill connected";
+        if (statusText) statusText.textContent = "Live Synced";
 
         if (interactive) showToast("Sync complete!");
+      } else {
+        throw new Error(response.error || "Unknown server response");
       }
     })
     .catch(err => {
       console.error("Sync error:", err);
-      statusPill.className = "hub-status-pill disconnected";
-      statusText.textContent = "Offline Cache";
+      if (statusPill) statusPill.className = "hub-status-pill disconnected";
+      if (statusText) statusText.textContent = "Offline Cache";
       if (interactive) showToast("Could not reach Google Sheets. Showing offline cache.");
     });
 }
