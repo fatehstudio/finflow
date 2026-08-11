@@ -6,7 +6,7 @@
   <title>FinFlow - Personal Finance Tracker</title>
   
   <!-- Premium Stylesheets -->
-  <link rel="stylesheet" href="style.css?v=3.7">
+  <link rel="stylesheet" href="style.css?v=3.8">
   
   <!-- Lucide Icons CDN for sleek vector graphics -->
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -70,11 +70,11 @@
           <div class="dashboard-hero-side">
             <!-- Savings & Investment Row -->
             <div class="secondary-metrics">
-              <div class="metric-pill savings clickable-kpi" onclick="showCategoryTypeDetailsModal('Savings', getSalaryCycleRange())" title="Click to view all Savings transactions & sub-tags">
+              <div class="metric-pill savings clickable-kpi" onclick="showSavingsDetailsModal(getSalaryCycleRange())" title="Click to view deep-dive Savings transactions, categories & sub-tags">
                 <span class="pill-label" style="display: flex; align-items: center; justify-content: space-between;">Total Savings <i data-lucide="chevron-right" style="width: 12px; height: 12px; opacity: 0.8;"></i></span>
                 <span id="val-monthly-savings" class="pill-value">RM 0.00</span>
               </div>
-              <div class="metric-pill investment clickable-kpi" onclick="showCategoryTypeDetailsModal('Investment', getSalaryCycleRange())" title="Click to view all Investment transactions & sub-tags">
+              <div class="metric-pill investment clickable-kpi" onclick="showInvestmentDetailsModal(getSalaryCycleRange())" title="Click to view deep-dive Investment transactions, categories & sub-tags">
                 <span class="pill-label" style="display: flex; align-items: center; justify-content: space-between;">Total Invested <i data-lucide="chevron-right" style="width: 12px; height: 12px; opacity: 0.8;"></i></span>
                 <span id="val-monthly-investments" class="pill-value">RM 0.00</span>
               </div>
@@ -376,12 +376,16 @@
           </div>
         </div>
 
-        <!-- Tag Breakdown Filter Bar -->
-        <div class="modal-tags-breakdown">
-          <div class="modal-tags-label">Filter by Tag:</div>
-          <div id="modal-budget-tags-pills" class="modal-tags-pills">
-            <!-- Dynamically populated tag breakdown pills -->
-          </div>
+        <!-- 1. Category Filter Bar -->
+        <div id="modal-category-filter-section" class="modal-filter-section">
+          <div class="modal-filter-label">1. Filter by Category:</div>
+          <div id="modal-budget-category-pills" class="modal-filter-pills"></div>
+        </div>
+
+        <!-- 2. Tag Breakdown Filter Bar -->
+        <div id="modal-tags-filter-section" class="modal-filter-section">
+          <div class="modal-filter-label">2. Filter by Tag:</div>
+          <div id="modal-budget-tags-pills" class="modal-filter-pills"></div>
         </div>
 
         <div class="modal-tx-section">
@@ -399,6 +403,6 @@
   </div>
 
   <!-- JavaScript Logic -->
-  <script src="app.js?v=3.7"></script>
+  <script src="app.js?v=3.8"></script>
 </body>
 </html>

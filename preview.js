@@ -1344,27 +1344,114 @@ function closeBudgetModal() {
   if (modal) modal.classList.remove("show");
 }
 
-function showCategoryTypeDetailsModal(txType = "Income", cycle = getSalaryCycleRange(), selectedTag = "ALL") {
+let activeTypeModalCategory = "ALL";
+let activeTypeModalTag = "ALL";
+
+function showCategoryTypeDetailsModal(txType = "Expense", cycle = getSalaryCycleRange(), selectedCategory = "ALL", selectedTag = "ALL") {
   const modal = document.getElementById("budget-modal");
   if (!modal) return;
 
-  activeBudgetTagFilter = selectedTag;
+  activeTypeModalCategory = selectedCategory;
+  activeTypeModalTag = selectedTag;
 
   // Filter all transactions for this Type in active salary cycle
-  const allTxs = state.transactions.filter(
+  const allTypeTxs = state.transactions.filter(
     tx => tx.Type === txType && tx.Date >= cycle.startDate && tx.Date <= cycle.endDate
   );
 
-  // Calculate totals and sub-tags
+  // Group by category to build Category Filter Bar
+  const categoryMap = {};
+  let grandTotal = 0;
+
+  allTypeTxs.forEach(tx => {
+    const amt = parseFloat(tx.Amount) || 0;
+    grandTotal += amt;
+    const cat = tx.Category || "Uncategorized";
+
+    if (!categoryMap[cat]) {
+      categoryMap[cat] = { total: 0, count: 0, tags: {}, untaggedTotal: 0, untaggedCount: 0 };
+    }
+    categoryMap[cat].total += amt;
+    categoryMap[cat].count++;
+
+    if (!tx.Tags || !tx.Tags.trim()) {
+      categoryMap[cat].untaggedTotal += amt;
+      categoryMap[cat].untaggedCount++;
+    } else {
+      const tagsList = tx.Tags.split(",").map(t => t.trim()).filter(Boolean);
+      if (tagsList.length === 0) {
+        categoryMap[cat].untaggedTotal += amt;
+        categoryMap[cat].untaggedCount++;
+      } else {
+        tagsList.forEach(t => {
+          categoryMap[cat].tags[t] = (categoryMap[cat].tags[t] || 0) + amt;
+        });
+      }
+    }
+  });
+
+  // Set modal headers and summary cards
+  const typeTitle = txType === "Expense" ? "Monthly Expenses (Outflow)" :
+                    txType === "Income" ? "Monthly Income (Inflow)" :
+                    txType === "Savings" ? "Monthly Savings" : "Monthly Investments";
+
+  document.getElementById("modal-budget-category").textContent = typeTitle;
+  document.getElementById("modal-budget-cycle").textContent = `Cycle: ${formatReadableDate(cycle.startDate)} - ${formatReadableDate(cycle.endDate)}`;
+
+  document.getElementById("modal-budget-spent").textContent = formatCurrency(grandTotal);
+
+  const spentPill = document.querySelector(".modal-pill.spent .pill-label");
+  if (spentPill) spentPill.textContent = txType === "Income" ? "Total Inflow" : "Total Outflow";
+
+  const targetPill = document.querySelector(".modal-pill.target .pill-label");
+  if (targetPill) targetPill.textContent = "Total Items";
+  document.getElementById("modal-budget-limit").textContent = `${allTypeTxs.length} items`;
+
+  const remainingPill = document.querySelector(".modal-pill.remaining .pill-label");
+  if (remainingPill) remainingPill.textContent = "Average / Item";
+  const avgAmt = allTypeTxs.length > 0 ? (grandTotal / allTypeTxs.length) : 0;
+  document.getElementById("modal-budget-remaining").textContent = formatCurrency(avgAmt);
+
+  // 1. Render Category Filter Bar (1st Level)
+  const categoryFilterContainer = document.getElementById("modal-budget-category-pills");
+  if (categoryFilterContainer) {
+    categoryFilterContainer.innerHTML = "";
+
+    const allCatBtn = document.createElement("button");
+    allCatBtn.className = `modal-category-pill ${activeTypeModalCategory === "ALL" ? "active" : ""}`;
+    allCatBtn.innerHTML = `All Categories (${allTypeTxs.length}) • ${formatCurrency(grandTotal)}`;
+    allCatBtn.addEventListener("click", () => {
+      showCategoryTypeDetailsModal(txType, cycle, "ALL", "ALL");
+    });
+    categoryFilterContainer.appendChild(allCatBtn);
+
+    Object.keys(categoryMap).sort().forEach(cat => {
+      const catData = categoryMap[cat];
+      const catBtn = document.createElement("button");
+      catBtn.className = `modal-category-pill ${activeTypeModalCategory === cat ? "active" : ""}`;
+      catBtn.innerHTML = `${cat} (${catData.count}) • ${formatCurrency(catData.total)}`;
+      catBtn.addEventListener("click", () => {
+        showCategoryTypeDetailsModal(txType, cycle, cat, "ALL");
+      });
+      categoryFilterContainer.appendChild(catBtn);
+    });
+  }
+
+  // Filter by Category first
+  let categoryFilteredTxs = allTypeTxs;
+  let categorySubtotal = grandTotal;
+  if (activeTypeModalCategory !== "ALL") {
+    categoryFilteredTxs = allTypeTxs.filter(tx => tx.Category === activeTypeModalCategory);
+    categorySubtotal = categoryMap[activeTypeModalCategory] ? categoryMap[activeTypeModalCategory].total : 0;
+  }
+
+  // 2. Compute available tags within categoryFilteredTxs to render Tag Filter Bar (2nd Level)
   const tagsMap = {};
   let untaggedTotal = 0;
   let untaggedCount = 0;
-  let totalAmount = 0;
 
-  allTxs.forEach(tx => {
+  categoryFilteredTxs.forEach(tx => {
     const amt = parseFloat(tx.Amount) || 0;
-    totalAmount += amt;
-
     if (!tx.Tags || !tx.Tags.trim()) {
       untaggedTotal += amt;
       untaggedCount++;
@@ -1374,104 +1461,85 @@ function showCategoryTypeDetailsModal(txType = "Income", cycle = getSalaryCycleR
         untaggedTotal += amt;
         untaggedCount++;
       } else {
-        tagsList.forEach(tag => {
-          if (!tagsMap[tag]) tagsMap[tag] = { total: 0, count: 0 };
-          tagsMap[tag].total += amt;
-          tagsMap[tag].count++;
+        tagsList.forEach(t => {
+          if (!tagsMap[t]) tagsMap[t] = { total: 0, count: 0 };
+          tagsMap[t].total += amt;
+          tagsMap[t].count++;
         });
       }
     }
   });
 
-  // Set modal headers and top summary pills
-  const typeTitle = txType === "Income" ? "Monthly Inflow (Income)" : 
-                    txType === "Expense" ? "Monthly Outflow (Expenses)" : 
-                    txType === "Savings" ? "Monthly Savings" : "Monthly Investments";
-
-  document.getElementById("modal-budget-category").textContent = typeTitle;
-  document.getElementById("modal-budget-cycle").textContent = `Cycle: ${formatReadableDate(cycle.startDate)} - ${formatReadableDate(cycle.endDate)}`;
-
-  document.getElementById("modal-budget-spent").textContent = formatCurrency(totalAmount);
-  
-  // Set labels
-  const spentPill = document.querySelector(".modal-pill.spent .pill-label");
-  if (spentPill) spentPill.textContent = txType === "Income" ? "Total Inflow" : "Total Amount";
-
-  const targetPill = document.querySelector(".modal-pill.target .pill-label");
-  if (targetPill) targetPill.textContent = "Deposits / Items";
-  document.getElementById("modal-budget-limit").textContent = `${allTxs.length} items`;
-
-  const remainingPill = document.querySelector(".modal-pill.remaining .pill-label");
-  if (remainingPill) remainingPill.textContent = "Average / Item";
-  const avgAmt = allTxs.length > 0 ? (totalAmount / allTxs.length) : 0;
-  document.getElementById("modal-budget-remaining").textContent = formatCurrency(avgAmt);
-
-  // Build Tag Breakdown Pills
+  // Render Tag Filter Bar
   const tagsPillsContainer = document.getElementById("modal-budget-tags-pills");
   if (tagsPillsContainer) {
     tagsPillsContainer.innerHTML = "";
 
-    const allPill = document.createElement("button");
-    allPill.className = `modal-tag-pill ${activeBudgetTagFilter === "ALL" ? "active" : ""}`;
-    allPill.innerHTML = `All (${allTxs.length}) • ${formatCurrency(totalAmount)}`;
-    allPill.addEventListener("click", () => {
-      showCategoryTypeDetailsModal(txType, cycle, "ALL");
+    const allTagBtn = document.createElement("button");
+    allTagBtn.className = `modal-tag-pill ${activeTypeModalTag === "ALL" ? "active" : ""}`;
+    allTagBtn.innerHTML = `All Tags (${categoryFilteredTxs.length}) • ${formatCurrency(categorySubtotal)}`;
+    allTagBtn.addEventListener("click", () => {
+      showCategoryTypeDetailsModal(txType, cycle, activeTypeModalCategory, "ALL");
     });
-    tagsPillsContainer.appendChild(allPill);
+    tagsPillsContainer.appendChild(allTagBtn);
 
     Object.keys(tagsMap).sort().forEach(tag => {
       const tagData = tagsMap[tag];
-      const pill = document.createElement("button");
-      pill.className = `modal-tag-pill ${activeBudgetTagFilter === tag ? "active" : ""}`;
-      pill.innerHTML = `🏷️ ${escapeHtml(tag)} (${tagData.count}) • ${formatCurrency(tagData.total)}`;
-      pill.addEventListener("click", () => {
-        showCategoryTypeDetailsModal(txType, cycle, tag);
+      const tagBtn = document.createElement("button");
+      tagBtn.className = `modal-tag-pill ${activeTypeModalTag === tag ? "active" : ""}`;
+      tagBtn.innerHTML = `🏷️ ${escapeHtml(tag)} (${tagData.count}) • ${formatCurrency(tagData.total)}`;
+      tagBtn.addEventListener("click", () => {
+        showCategoryTypeDetailsModal(txType, cycle, activeTypeModalCategory, tag);
       });
-      tagsPillsContainer.appendChild(pill);
+      tagsPillsContainer.appendChild(tagBtn);
     });
 
     if (untaggedCount > 0) {
-      const noTagPill = document.createElement("button");
-      noTagPill.className = `modal-tag-pill ${activeBudgetTagFilter === "_NO_TAG_" ? "active" : ""}`;
-      noTagPill.innerHTML = `⚪ No Tag (${untaggedCount}) • ${formatCurrency(untaggedTotal)}`;
-      noTagPill.addEventListener("click", () => {
-        showCategoryTypeDetailsModal(txType, cycle, "_NO_TAG_");
+      const noTagBtn = document.createElement("button");
+      noTagBtn.className = `modal-tag-pill ${activeTypeModalTag === "_NO_TAG_" ? "active" : ""}`;
+      noTagBtn.innerHTML = `⚪ No Tag (${untaggedCount}) • ${formatCurrency(untaggedTotal)}`;
+      noTagBtn.addEventListener("click", () => {
+        showCategoryTypeDetailsModal(txType, cycle, activeTypeModalCategory, "_NO_TAG_");
       });
-      tagsPillsContainer.appendChild(noTagPill);
+      tagsPillsContainer.appendChild(noTagBtn);
     }
   }
 
-  // Filter transactions
-  let filteredTxs = allTxs;
-  let filteredSubtotal = totalAmount;
+  // Filter by Tag second
+  let finalTxs = categoryFilteredTxs;
+  let finalSubtotal = categorySubtotal;
 
-  if (activeBudgetTagFilter === "_NO_TAG_") {
-    filteredTxs = allTxs.filter(tx => !tx.Tags || !tx.Tags.trim());
-    filteredSubtotal = untaggedTotal;
-  } else if (activeBudgetTagFilter !== "ALL") {
-    filteredTxs = allTxs.filter(tx => {
+  if (activeTypeModalTag === "_NO_TAG_") {
+    finalTxs = categoryFilteredTxs.filter(tx => !tx.Tags || !tx.Tags.trim());
+    finalSubtotal = untaggedTotal;
+  } else if (activeTypeModalTag !== "ALL") {
+    finalTxs = categoryFilteredTxs.filter(tx => {
       if (!tx.Tags) return false;
       const list = tx.Tags.split(",").map(t => t.trim().toLowerCase());
-      return list.includes(activeBudgetTagFilter.toLowerCase());
+      return list.includes(activeTypeModalTag.toLowerCase());
     });
-    filteredSubtotal = tagsMap[activeBudgetTagFilter] ? tagsMap[activeBudgetTagFilter].total : 0;
+    finalSubtotal = tagsMap[activeTypeModalTag] ? tagsMap[activeTypeModalTag].total : 0;
   }
 
-  filteredTxs.sort((a, b) => new Date(b.Date) - new Date(a.Date));
+  finalTxs.sort((a, b) => new Date(b.Date) - new Date(a.Date));
 
   const countEl = document.getElementById("modal-budget-count");
-  if (countEl) countEl.textContent = filteredTxs.length;
+  if (countEl) countEl.textContent = finalTxs.length;
 
   const subtotalEl = document.getElementById("modal-budget-subtotal");
-  if (subtotalEl) subtotalEl.textContent = `Subtotal: ${formatCurrency(filteredSubtotal)}`;
+  if (subtotalEl) {
+    const catLabel = activeTypeModalCategory !== "ALL" ? `${activeTypeModalCategory} ` : "";
+    const tagLabel = activeTypeModalTag !== "ALL" ? (activeTypeModalTag === "_NO_TAG_" ? "• No Tag" : `• 🏷️ ${activeTypeModalTag}`) : "";
+    subtotalEl.textContent = `Subtotal: ${formatCurrency(finalSubtotal)}`;
+  }
 
   const listContainer = document.getElementById("modal-budget-tx-list");
   listContainer.innerHTML = "";
 
-  if (filteredTxs.length === 0) {
-    listContainer.innerHTML = `<div class="modal-no-tx"><p>No ${txType.toLowerCase()} transactions logged for this tag.</p></div>`;
+  if (finalTxs.length === 0) {
+    listContainer.innerHTML = `<div class="modal-no-tx"><p>No transactions match the selected Category & Tag filters.</p></div>`;
   } else {
-    filteredTxs.forEach(tx => {
+    finalTxs.forEach(tx => {
       const item = document.createElement("div");
       item.className = "modal-tx-item";
 
@@ -1491,7 +1559,7 @@ function showCategoryTypeDetailsModal(txType = "Income", cycle = getSalaryCycleR
       const catBadge = document.createElement("span");
       catBadge.style.fontSize = "0.72rem";
       catBadge.style.fontWeight = "700";
-      catBadge.style.color = txType === "Income" ? "#34d399" : "#a5b4fc";
+      catBadge.style.color = txType === "Income" ? "var(--income)" : "#a5b4fc";
       catBadge.textContent = `[${tx.Category}]`;
       headerLine.appendChild(catBadge);
 
@@ -1529,7 +1597,7 @@ function showCategoryTypeDetailsModal(txType = "Income", cycle = getSalaryCycleR
 
       const amtEl = document.createElement("span");
       amtEl.className = "modal-tx-amount";
-      amtEl.style.color = txType === "Income" ? "#34d399" : "#fb7185";
+      amtEl.style.color = txType === "Income" ? "var(--income)" : "#fb7185";
       amtEl.textContent = `${txType === "Income" ? "+" : "-"}${formatCurrency(tx.Amount)}`;
       right.appendChild(amtEl);
 
@@ -1543,7 +1611,7 @@ function showCategoryTypeDetailsModal(txType = "Income", cycle = getSalaryCycleR
         if (!txId) return;
         if (confirm("Delete this transaction?")) {
           deleteTransaction(txId);
-          showCategoryTypeDetailsModal(txType, cycle, activeBudgetTagFilter);
+          showCategoryTypeDetailsModal(txType, cycle, activeTypeModalCategory, activeTypeModalTag);
         }
       });
       right.appendChild(deleteBtn);
@@ -1559,16 +1627,304 @@ function showCategoryTypeDetailsModal(txType = "Income", cycle = getSalaryCycleR
 }
 
 function showInflowDetailsModal(cycle) {
-  showCategoryTypeDetailsModal("Income", cycle);
+  showCategoryTypeDetailsModal("Income", cycle, "ALL", "ALL");
 }
 
 function showOutflowDetailsModal(cycle) {
-  showCategoryTypeDetailsModal("Expense", cycle);
+  showCategoryTypeDetailsModal("Expense", cycle, "ALL", "ALL");
+}
+
+function showSavingsDetailsModal(cycle = getSalaryCycleRange(), selectedCategory = "ALL", selectedTag = "ALL") {
+  const modal = document.getElementById("budget-modal");
+  if (!modal) return;
+
+  activeTypeModalCategory = selectedCategory;
+  activeTypeModalTag = selectedTag;
+
+  // Calculate Monthly Income for this cycle to compute Savings Retention Rate
+  let monthlyIncome = 0;
+  state.transactions.forEach(tx => {
+    if (tx.Type === "Income" && tx.Date >= cycle.startDate && tx.Date <= cycle.endDate) {
+      monthlyIncome += (parseFloat(tx.Amount) || 0);
+    }
+  });
+
+  // Filter all Savings transactions in this cycle
+  const allSavingsTxs = state.transactions.filter(
+    tx => tx.Type === "Savings" && tx.Date >= cycle.startDate && tx.Date <= cycle.endDate
+  );
+
+  // Group by category to build Category Filter Bar
+  const categoryMap = {};
+  let totalSavings = 0;
+
+  allSavingsTxs.forEach(tx => {
+    const amt = parseFloat(tx.Amount) || 0;
+    totalSavings += amt;
+    const cat = tx.Category || "General Savings";
+
+    if (!categoryMap[cat]) {
+      categoryMap[cat] = { total: 0, count: 0, tags: {}, untaggedTotal: 0, untaggedCount: 0 };
+    }
+    categoryMap[cat].total += amt;
+    categoryMap[cat].count++;
+
+    if (!tx.Tags || !tx.Tags.trim()) {
+      categoryMap[cat].untaggedTotal += amt;
+      categoryMap[cat].untaggedCount++;
+    } else {
+      const tagsList = tx.Tags.split(",").map(t => t.trim()).filter(Boolean);
+      if (tagsList.length === 0) {
+        categoryMap[cat].untaggedTotal += amt;
+        categoryMap[cat].untaggedCount++;
+      } else {
+        tagsList.forEach(t => {
+          categoryMap[cat].tags[t] = (categoryMap[cat].tags[t] || 0) + amt;
+        });
+      }
+    }
+  });
+
+  // Header & Title
+  document.getElementById("modal-budget-category").textContent = "💰 Savings & Capital Retention";
+  document.getElementById("modal-budget-cycle").textContent = `Cycle: ${formatReadableDate(cycle.startDate)} - ${formatReadableDate(cycle.endDate)}`;
+
+  // Summary Top Cards
+  const savingsRate = monthlyIncome > 0 ? ((totalSavings / monthlyIncome) * 100).toFixed(1) : "0.0";
+
+  document.getElementById("modal-budget-spent").textContent = formatCurrency(totalSavings);
+  const spentPill = document.querySelector(".modal-pill.spent .pill-label");
+  if (spentPill) spentPill.textContent = "Total Saved";
+
+  document.getElementById("modal-budget-limit").textContent = `${savingsRate}%`;
+  const targetPill = document.querySelector(".modal-pill.target .pill-label");
+  if (targetPill) targetPill.textContent = "Retention Rate";
+
+  document.getElementById("modal-budget-remaining").textContent = `${allSavingsTxs.length} deposits`;
+  const remainingPill = document.querySelector(".modal-pill.remaining .pill-label");
+  if (remainingPill) remainingPill.textContent = "Total Deposits";
+
+  // 1. Render Category Filter Bar (1st Level)
+  const categoryFilterContainer = document.getElementById("modal-budget-category-pills");
+  if (categoryFilterContainer) {
+    categoryFilterContainer.innerHTML = "";
+
+    const allCatBtn = document.createElement("button");
+    allCatBtn.className = `modal-category-pill ${activeTypeModalCategory === "ALL" ? "active" : ""}`;
+    allCatBtn.innerHTML = `All Savings (${allSavingsTxs.length}) • ${formatCurrency(totalSavings)}`;
+    allCatBtn.addEventListener("click", () => {
+      showSavingsDetailsModal(cycle, "ALL", "ALL");
+    });
+    categoryFilterContainer.appendChild(allCatBtn);
+
+    Object.keys(categoryMap).sort().forEach(cat => {
+      const catData = categoryMap[cat];
+      const catBtn = document.createElement("button");
+      catBtn.className = `modal-category-pill ${activeTypeModalCategory === cat ? "active" : ""}`;
+      catBtn.innerHTML = `🏦 ${cat} (${catData.count}) • ${formatCurrency(catData.total)}`;
+      catBtn.addEventListener("click", () => {
+        showSavingsDetailsModal(cycle, cat, "ALL");
+      });
+      categoryFilterContainer.appendChild(catBtn);
+    });
+  }
+
+  // Filter by Category
+  let categoryFilteredTxs = allSavingsTxs;
+  let categorySubtotal = totalSavings;
+  if (activeTypeModalCategory !== "ALL") {
+    categoryFilteredTxs = allSavingsTxs.filter(tx => tx.Category === activeTypeModalCategory);
+    categorySubtotal = categoryMap[activeTypeModalCategory] ? categoryMap[activeTypeModalCategory].total : 0;
+  }
+
+  // 2. Compute available tags within categoryFilteredTxs to render Tag Filter Bar (2nd Level)
+  const tagsMap = {};
+  let untaggedTotal = 0;
+  let untaggedCount = 0;
+
+  categoryFilteredTxs.forEach(tx => {
+    const amt = parseFloat(tx.Amount) || 0;
+    if (!tx.Tags || !tx.Tags.trim()) {
+      untaggedTotal += amt;
+      untaggedCount++;
+    } else {
+      const tagsList = tx.Tags.split(",").map(t => t.trim()).filter(Boolean);
+      if (tagsList.length === 0) {
+        untaggedTotal += amt;
+        untaggedCount++;
+      } else {
+        tagsList.forEach(t => {
+          if (!tagsMap[t]) tagsMap[t] = { total: 0, count: 0 };
+          tagsMap[t].total += amt;
+          tagsMap[t].count++;
+        });
+      }
+    }
+  });
+
+  // Render Tag Filter Bar
+  const tagsPillsContainer = document.getElementById("modal-budget-tags-pills");
+  if (tagsPillsContainer) {
+    tagsPillsContainer.innerHTML = "";
+
+    const allTagBtn = document.createElement("button");
+    allTagBtn.className = `modal-tag-pill ${activeTypeModalTag === "ALL" ? "active" : ""}`;
+    allTagBtn.innerHTML = `All Tags (${categoryFilteredTxs.length}) • ${formatCurrency(categorySubtotal)}`;
+    allTagBtn.addEventListener("click", () => {
+      showSavingsDetailsModal(cycle, activeTypeModalCategory, "ALL");
+    });
+    tagsPillsContainer.appendChild(allTagBtn);
+
+    Object.keys(tagsMap).sort().forEach(tag => {
+      const tagData = tagsMap[tag];
+      const tagBtn = document.createElement("button");
+      tagBtn.className = `modal-tag-pill ${activeTypeModalTag === tag ? "active" : ""}`;
+      tagBtn.innerHTML = `🏷️ ${escapeHtml(tag)} (${tagData.count}) • ${formatCurrency(tagData.total)}`;
+      tagBtn.addEventListener("click", () => {
+        showSavingsDetailsModal(cycle, activeTypeModalCategory, tag);
+      });
+      tagsPillsContainer.appendChild(tagBtn);
+    });
+
+    if (untaggedCount > 0) {
+      const noTagBtn = document.createElement("button");
+      noTagBtn.className = `modal-tag-pill ${activeTypeModalTag === "_NO_TAG_" ? "active" : ""}`;
+      noTagBtn.innerHTML = `⚪ No Tag (${untaggedCount}) • ${formatCurrency(untaggedTotal)}`;
+      noTagBtn.addEventListener("click", () => {
+        showSavingsDetailsModal(cycle, activeTypeModalCategory, "_NO_TAG_");
+      });
+      tagsPillsContainer.appendChild(noTagBtn);
+    }
+  }
+
+  // Filter by Tag
+  let finalTxs = categoryFilteredTxs;
+  let finalSubtotal = categorySubtotal;
+
+  if (activeTypeModalTag === "_NO_TAG_") {
+    finalTxs = categoryFilteredTxs.filter(tx => !tx.Tags || !tx.Tags.trim());
+    finalSubtotal = untaggedTotal;
+  } else if (activeTypeModalTag !== "ALL") {
+    finalTxs = categoryFilteredTxs.filter(tx => {
+      if (!tx.Tags) return false;
+      const list = tx.Tags.split(",").map(t => t.trim().toLowerCase());
+      return list.includes(activeTypeModalTag.toLowerCase());
+    });
+    finalSubtotal = tagsMap[activeTypeModalTag] ? tagsMap[activeTypeModalTag].total : 0;
+  }
+
+  finalTxs.sort((a, b) => new Date(b.Date) - new Date(a.Date));
+
+  const countEl = document.getElementById("modal-budget-count");
+  if (countEl) countEl.textContent = finalTxs.length;
+
+  const subtotalEl = document.getElementById("modal-budget-subtotal");
+  if (subtotalEl) {
+    subtotalEl.textContent = `Subtotal: ${formatCurrency(finalSubtotal)}`;
+  }
+
+  const listContainer = document.getElementById("modal-budget-tx-list");
+  listContainer.innerHTML = "";
+
+  if (finalTxs.length === 0) {
+    listContainer.innerHTML = `<div class="modal-no-tx"><p>No savings deposits match the selected Category & Tag filters.</p></div>`;
+  } else {
+    finalTxs.forEach(tx => {
+      const item = document.createElement("div");
+      item.className = "modal-tx-item";
+
+      const left = document.createElement("div");
+      left.className = "modal-tx-left";
+
+      const headerLine = document.createElement("div");
+      headerLine.style.display = "flex";
+      headerLine.style.alignItems = "center";
+      headerLine.style.gap = "8px";
+
+      const dateEl = document.createElement("span");
+      dateEl.className = "modal-tx-date";
+      dateEl.textContent = formatReadableDate(tx.Date);
+      headerLine.appendChild(dateEl);
+
+      const catBadge = document.createElement("span");
+      catBadge.style.fontSize = "0.72rem";
+      catBadge.style.fontWeight = "700";
+      catBadge.style.color = "#38bdf8";
+      catBadge.textContent = `[${tx.Category}]`;
+      headerLine.appendChild(catBadge);
+
+      left.appendChild(headerLine);
+
+      if (tx.Notes) {
+        const notesEl = document.createElement("div");
+        notesEl.className = "modal-tx-notes";
+        notesEl.textContent = tx.Notes;
+        left.appendChild(notesEl);
+      }
+
+      if (tx.Tags && tx.Tags.trim()) {
+        const tagsContainer = document.createElement("div");
+        tagsContainer.className = "modal-tx-tags";
+        tx.Tags.split(",").forEach(t => {
+          if (t.trim()) {
+            const badge = document.createElement("span");
+            badge.className = "tag-badge";
+            badge.textContent = t.trim();
+            tagsContainer.appendChild(badge);
+          }
+        });
+        left.appendChild(tagsContainer);
+      } else {
+        const noTagBadge = document.createElement("span");
+        noTagBadge.className = "tag-badge";
+        noTagBadge.style.opacity = "0.6";
+        noTagBadge.textContent = "No Tag";
+        left.appendChild(noTagBadge);
+      }
+
+      const right = document.createElement("div");
+      right.className = "modal-tx-right";
+
+      const amtEl = document.createElement("span");
+      amtEl.className = "modal-tx-amount";
+      amtEl.style.color = "#38bdf8";
+      amtEl.textContent = `+${formatCurrency(tx.Amount)}`;
+      right.appendChild(amtEl);
+
+      const deleteBtn = document.createElement("button");
+      deleteBtn.className = "tx-delete-btn";
+      deleteBtn.title = "Delete Transaction";
+      deleteBtn.innerHTML = `<i data-lucide="trash-2" style="width: 15px; height: 15px;"></i>`;
+      deleteBtn.addEventListener("click", e => {
+        e.stopPropagation();
+        const txId = tx.id || tx.ID;
+        if (!txId) return;
+        if (confirm("Delete this savings deposit?")) {
+          deleteTransaction(txId);
+          showSavingsDetailsModal(cycle, activeTypeModalCategory, activeTypeModalTag);
+        }
+      });
+      right.appendChild(deleteBtn);
+
+      item.appendChild(left);
+      item.appendChild(right);
+      listContainer.appendChild(item);
+    });
+  }
+
+  modal.classList.add("show");
+  lucide.createIcons();
+}
+
+function showInvestmentDetailsModal(cycle = getSalaryCycleRange(), selectedCategory = "ALL", selectedTag = "ALL") {
+  showCategoryTypeDetailsModal("Investment", cycle, selectedCategory, selectedTag);
 }
 
 window.showBudgetDetailsModal = showBudgetDetailsModal;
 window.showInflowDetailsModal = showInflowDetailsModal;
 window.showOutflowDetailsModal = showOutflowDetailsModal;
+window.showSavingsDetailsModal = showSavingsDetailsModal;
+window.showInvestmentDetailsModal = showInvestmentDetailsModal;
 window.showCategoryTypeDetailsModal = showCategoryTypeDetailsModal;
 window.closeBudgetModal = closeBudgetModal;
 

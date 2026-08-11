@@ -1102,43 +1102,63 @@ body {
 .modal-pill.target .pill-value { color: white; }
 .modal-pill.remaining .pill-value { color: #34d399; }
 
-.modal-tags-breakdown {
-  padding: 12px 24px;
+.modal-filter-section {
+  padding: 8px 24px;
   background: #1e293b;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-.modal-tags-label {
-  font-size: 0.7rem;
+.modal-filter-label {
+  font-size: 0.68rem;
   font-weight: 700;
   color: var(--text-muted);
   text-transform: uppercase;
+  letter-spacing: 0.05em;
   margin-bottom: 6px;
 }
 
-.modal-tags-pills {
+.modal-filter-pills {
   display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  padding-bottom: 4px;
+  gap: 6px;
+  flex-wrap: wrap;
+  max-height: 110px;
+  overflow-y: auto;
+  padding-bottom: 2px;
 }
 
+.modal-category-pill,
 .modal-tag-pill {
-  padding: 5px 12px;
+  padding: 4px 10px;
   border-radius: var(--radius-full);
   background: #0f172a;
   border: 1px solid var(--border);
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 600;
   color: var(--text-secondary);
   cursor: pointer;
   white-space: nowrap;
+  transition: var(--transition);
+}
+
+.modal-category-pill:hover,
+.modal-tag-pill:hover {
+  background: rgba(99, 102, 241, 0.15);
+  color: white;
+  border-color: rgba(99, 102, 241, 0.4);
+}
+
+.modal-category-pill.active {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: white;
+  border-color: #8b5cf6;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.35);
 }
 
 .modal-tag-pill.active {
-  background: var(--primary);
+  background: linear-gradient(135deg, #10b981, #059669);
   color: white;
-  border-color: var(--primary);
+  border-color: #10b981;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35);
 }
 
 .modal-tx-section {
