@@ -6,7 +6,7 @@
   <title>FinFlow - Personal Finance Tracker</title>
   
   <!-- Premium Stylesheets -->
-  <link rel="stylesheet" href="style.css?v=3.2">
+  <link rel="stylesheet" href="style.css?v=3.3">
   
   <!-- Lucide Icons CDN for sleek vector graphics -->
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -31,7 +31,13 @@
           <p>Cash Flow Manager</p>
         </div>
       </div>
-      <div id="status-indicator" class="status-indicator disconnected" title="Sync Status"></div>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <a href="preview.html" class="preview-switch-badge" title="Open Asset Hub Professional Dashboard Preview">
+          <i data-lucide="sparkles" style="width: 14px; height: 14px;"></i>
+          <span>Asset Hub Pro</span>
+        </a>
+        <div id="status-indicator" class="status-indicator disconnected" title="Sync Status"></div>
+      </div>
     </header>
 
     <!-- Main Content Panel -->
@@ -381,6 +387,6 @@
   </div>
 
   <!-- JavaScript Logic -->
-  <script src="app.js?v=3.2"></script>
+  <script src="app.js?v=3.3"></script>
 </body>
 </html>

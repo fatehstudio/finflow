@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>FinFlow Asset Hub - Professional Wealth & Analytics Dashboard (Preview)</title>
+  
+  <!-- Google Fonts: Plus Jakarta Sans for executive fintech typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  
+  <!-- Premium Stylesheets -->
+  <link rel="stylesheet" href="preview.css?v=1.0">
+  
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+  <!-- Top Preview Notice Banner -->
+  <div class="preview-notice-bar">
+    <div class="notice-left">
+      <span class="sparkle-badge"><i data-lucide="sparkles"></i> PREVIEW MODE</span>
+      <span>Viewing <b>FinFlow Asset Hub Pro</b>. Connected to your live data.</span>
+    </div>
+    <div class="notice-right">
+      <a href="index.html" class="switch-standard-btn">
+        <i data-lucide="arrow-left"></i> Standard App
+      </a>
+    </div>
+  </div>
+
+  <div class="hub-container">
+    
+    <!-- Header -->
+    <header class="hub-header">
+      <div class="hub-brand-group">
+        <div class="hub-logo">
+          <span>F</span>
+        </div>
+        <div class="hub-brand-text">
+          <div class="brand-line">
+            <h1>FinFlow <span>Asset Hub</span></h1>
+            <span class="pro-tag">PRO</span>
+          </div>
+          <p id="hub-cycle-label">Salary Cycle: Calculating...</p>
+        </div>
+      </div>
+
+      <div class="hub-header-actions">
+        <div id="hub-status-pill" class="hub-status-pill disconnected" title="Google Sheets Sync">
+          <span class="status-dot"></span>
+          <span id="hub-status-text">Connecting</span>
+        </div>
+        
+        <button id="btn-hub-sync" class="hub-btn secondary" onclick="syncWithSheets(true)" title="Sync with Google Sheets">
+          <i data-lucide="refresh-cw"></i>
+          <span>Sync</span>
+        </button>
+
+        <a href="index.html" class="hub-btn primary">
+          <i data-lucide="plus-circle"></i>
+          <span>Add Transaction</span>
+        </a>
+      </div>
+    </header>
+
+    <!-- Sub-Navigation Navigation Pills -->
+    <nav class="hub-nav-tabs">
+      <button class="hub-tab-btn active" data-tab="overview">
+        <i data-lucide="layout-dashboard"></i>
+        <span>Wealth & Asset Overview</span>
+      </button>
+      <button class="hub-tab-btn" data-tab="comparison">
+        <i data-lucide="git-compare"></i>
+        <span>Monthly Comparison (MoM)</span>
+      </button>
+      <button class="hub-tab-btn" data-tab="tags">
+        <i data-lucide="tags"></i>
+        <span>Tag Deep-Dive</span>
+      </button>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="hub-main">
+
+      <!-- ============================================================
+           TAB 1: WEALTH & ASSET OVERVIEW
+           ============================================================ -->
+      <section id="tab-overview" class="hub-tab-content active">
+        
+        <!-- 4-KPI Executive Stat Grid -->
+        <div class="hub-kpi-grid">
+          
+          <!-- Card 1: Total Net Worth -->
+          <div class="kpi-card highlight-card">
+            <div class="kpi-card-header">
+              <span class="kpi-title">Total Net Worth / Balance</span>
+              <span class="kpi-badge growth" id="kpi-net-delta">+0.0% MoM</span>
+            </div>
+            <div class="kpi-primary-val" id="kpi-val-net">RM 0.00</div>
+            
+            <div class="asset-split-wrapper">
+              <div class="asset-split-bar">
+                <div id="bar-split-liquid" class="split-segment liquid" style="width: 50%" title="Liquid Cash"></div>
+                <div id="bar-split-invested" class="split-segment invested" style="width: 50%" title="Savings & Investments"></div>
+              </div>
+              <div class="asset-split-legend">
+                <span class="legend-item"><span class="dot liquid"></span> Liquid: <b id="lbl-split-liquid">RM 0.00</b></span>
+                <span class="legend-item"><span class="dot invested"></span> Invested/Saved: <b id="lbl-split-invested">RM 0.00</b></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 2: Monthly Inflow -->
+          <div class="kpi-card">
+            <div class="kpi-card-header">
+              <span class="kpi-title">Monthly Income (Inflow)</span>
+              <span class="kpi-icon-pill income"><i data-lucide="arrow-down-left"></i></span>
+            </div>
+            <div class="kpi-primary-val text-income" id="kpi-val-income">RM 0.00</div>
+            <div class="kpi-subtext">
+              <span>Salary Cycle Inflow</span>
+              <span id="kpi-income-tx-count" class="kpi-sub-badge">0 deposits</span>
+            </div>
+          </div>
+
+          <!-- Card 3: Monthly Expenses & Burn Rate -->
+          <div class="kpi-card">
+            <div class="kpi-card-header">
+              <span class="kpi-title">Monthly Outflow (Expenses)</span>
+              <span class="kpi-icon-pill expense"><i data-lucide="arrow-up-right"></i></span>
+            </div>
+            <div class="kpi-primary-val text-expense" id="kpi-val-expense">RM 0.00</div>
+            <div class="kpi-subtext">
+              <span>Burn Rate: <b id="kpi-burn-rate">RM 0.00/day</b></span>
+              <span id="kpi-days-left" class="kpi-sub-badge">0 days left</span>
+            </div>
+          </div>
+
+          <!-- Card 4: Savings Rate & Capital Retained -->
+          <div class="kpi-card">
+            <div class="kpi-card-header">
+              <span class="kpi-title">Savings & Retention Rate</span>
+              <span class="kpi-icon-pill savings"><i data-lucide="shield-check"></i></span>
+            </div>
+            <div class="kpi-primary-val text-savings" id="kpi-val-savings-rate">0.0%</div>
+            <div class="kpi-subtext">
+              <span>Retained: <b id="kpi-val-retained">RM 0.00</b></span>
+              <span id="kpi-savings-status" class="kpi-sub-badge">Target > 20%</span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Middle Charts Section: Donut + Cash Flow Runway -->
+        <div class="hub-charts-grid">
+          
+          <!-- Chart 1: Asset / Expense Allocation Donut -->
+          <div class="hub-card">
+            <div class="hub-card-header">
+              <div class="header-text">
+                <h3>Expense Distribution</h3>
+                <p>Spending across categories in active cycle</p>
+              </div>
+              <div class="hub-card-actions">
+                <button onclick="downloadHubDonutImage()" class="mini-tool-btn" title="Download Chart Image">
+                  <i data-lucide="image"></i>
+                </button>
+              </div>
+            </div>
+            <div class="chart-container-donut">
+              <canvas id="hub-chart-donut"></canvas>
+            </div>
+            <div id="hub-donut-legend-pills" class="donut-pills-row">
+              <!-- Dynamically populated category pill badges -->
+            </div>
+          </div>
+
+          <!-- Chart 2: Cash Flow Runway & Trend -->
+          <div class="hub-card">
+            <div class="hub-card-header">
+              <div class="header-text">
+                <h3>Cash Flow Runway</h3>
+                <p>Income vs Expenses over past 6 salary cycles</p>
+              </div>
+              <span class="cycle-indicator-tag">25th - 24th Cycle</span>
+            </div>
+            <div class="chart-container-bar">
+              <canvas id="hub-chart-trend"></canvas>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Bottom Grid: Budget Health Meters + Recent Activity Live Ledger -->
+        <div class="hub-bottom-grid">
+          
+          <!-- Budget Health Meters -->
+          <div class="hub-card">
+            <div class="hub-card-header">
+              <div class="header-text">
+                <h3>Category Budget Meters</h3>
+                <p>Click any category to view full drill-down transactions</p>
+              </div>
+            </div>
+            <div id="hub-budget-meters-list" class="budget-meters-list">
+              <!-- Dynamically populated budget progress cards -->
+            </div>
+          </div>
+
+          <!-- Recent Activity Live Feed -->
+          <div class="hub-card">
+            <div class="hub-card-header">
+              <div class="header-text">
+                <h3>Recent Transactions</h3>
+                <p>Live ledger of latest activity</p>
+              </div>
+              <a href="index.html" class="hub-link">View All History →</a>
+            </div>
+            <div id="hub-recent-tx-list" class="recent-tx-feed">
+              <!-- Dynamically populated recent transactions -->
+            </div>
+          </div>
+
+        </div>
+
+      </section>
+
+      <!-- ============================================================
+           TAB 2: MONTHLY COMPARISON (MoM ANALYTICS)
+           ============================================================ -->
+      <section id="tab-comparison" class="hub-tab-content">
+        
+        <!-- MoM Header Card -->
+        <div class="mom-summary-banner">
+          <div class="mom-banner-text">
+            <h2>Month-over-Month (MoM) Expense Comparison</h2>
+            <p>Analyze how your spending habits evolved between consecutive salary cycles.</p>
+          </div>
+
+          <div class="mom-cycles-selector">
+            <div class="selector-group">
+              <label>Compare Current Cycle</label>
+              <select id="mom-select-current" class="hub-select"></select>
+            </div>
+            <div class="selector-arrow">➔</div>
+            <div class="selector-group">
+              <label>With Previous Cycle</label>
+              <select id="mom-select-previous" class="hub-select"></select>
+            </div>
+          </div>
+        </div>
+
+        <!-- MoM High-Level Delta Cards -->
+        <div class="mom-delta-grid">
+          <div class="mom-delta-card">
+            <span class="delta-label">Total Expense Delta</span>
+            <div id="mom-val-total-delta" class="delta-value">RM 0.00</div>
+            <span id="mom-val-pct-delta" class="delta-sub">0.0% variance</span>
+          </div>
+          <div class="mom-delta-card">
+            <span class="delta-label">Largest Increase</span>
+            <div id="mom-val-top-increase" class="delta-value text-expense">None</div>
+            <span id="mom-sub-top-increase" class="delta-sub">No increase detected</span>
+          </div>
+          <div class="mom-delta-card">
+            <span class="delta-label">Largest Reduction (Saved)</span>
+            <div id="mom-val-top-saved" class="delta-value text-income">None</div>
+            <span id="mom-sub-top-saved" class="delta-sub">No reduction detected</span>
+          </div>
+        </div>
+
+        <!-- MoM Comparison Table -->
+        <div class="hub-card">
+          <div class="hub-card-header">
+            <div class="header-text">
+              <h3>Category-by-Category Variance Breakdown</h3>
+              <p>Direct comparison of expenses incurred in each category</p>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="hub-table">
+              <thead>
+                <tr>
+                  <th>Category</th>
+                  <th>Previous Cycle</th>
+                  <th>Current Cycle</th>
+                  <th>Variance (RM)</th>
+                  <th>Growth / Change</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="mom-table-body">
+                <!-- Dynamically populated MoM comparison rows -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Stacked 6-Cycle Trend Chart -->
+        <div class="hub-card" style="margin-top: 24px;">
+          <div class="hub-card-header">
+            <div class="header-text">
+              <h3>Multi-Cycle Category Spending History</h3>
+              <p>Track which categories take up the largest portion over time</p>
+            </div>
+          </div>
+          <div class="chart-container-stacked">
+            <canvas id="hub-chart-stacked-categories"></canvas>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ============================================================
+           TAB 3: TAG DEEP-DIVE ANALYTICS
+           ============================================================ -->
+      <section id="tab-tags" class="hub-tab-content">
+        
+        <div class="mom-summary-banner">
+          <div class="mom-banner-text">
+            <h2>Tag-Level Deep-Dive Analytics</h2>
+            <p>Understand exactly who and what is driving your outflow (e.g. Fateh, Personal, Work, Loans, Untagged).</p>
+          </div>
+        </div>
+
+        <!-- Tag Summary Grid -->
+        <div id="hub-tag-cards-grid" class="hub-tags-grid">
+          <!-- Dynamically populated tag analytics cards -->
+        </div>
+
+        <!-- Tag Distribution Chart -->
+        <div class="hub-card" style="margin-top: 24px;">
+          <div class="hub-card-header">
+            <div class="header-text">
+              <h3>Spending Share by Tag (Current Cycle)</h3>
+              <p>Visual breakdown of expenses attributed to each individual tag</p>
+            </div>
+          </div>
+          <div class="chart-container-bar">
+            <canvas id="hub-chart-tags"></canvas>
+          </div>
+        </div>
+
+      </section>
+
+    </main>
+
+    <!-- Global Drill-down Modal (Identical full feature set) -->
+    <div id="budget-modal" class="modal-overlay" onclick="if(event.target === this) closeBudgetModal()">
+      <div class="modal-card">
+        <div class="modal-header">
+          <div class="modal-title-group">
+            <h3 id="modal-budget-category">Category Expenses</h3>
+            <span id="modal-budget-cycle" class="modal-subtitle">Salary Cycle</span>
+          </div>
+          <button id="modal-budget-close" class="modal-close-btn" onclick="closeBudgetModal()">✕</button>
+        </div>
+
+        <div class="modal-summary-pills">
+          <div class="modal-pill spent">
+            <span class="pill-label">Spent</span>
+            <span id="modal-budget-spent" class="pill-value">RM 0.00</span>
+          </div>
+          <div class="modal-pill target">
+            <span class="pill-label">Budget</span>
+            <span id="modal-budget-limit" class="pill-value">RM 0.00</span>
+          </div>
+          <div class="modal-pill remaining">
+            <span class="pill-label">Remaining</span>
+            <span id="modal-budget-remaining" class="pill-value">RM 0.00</span>
+          </div>
+        </div>
+
+        <!-- Tag Breakdown Filter Bar -->
+        <div class="modal-tags-breakdown">
+          <div class="modal-tags-label">Filter by Tag:</div>
+          <div id="modal-budget-tags-pills" class="modal-tags-pills"></div>
+        </div>
+
+        <div class="modal-tx-section">
+          <div class="modal-tx-header">
+            <h4 class="modal-tx-title">Transactions (<span id="modal-budget-count">0</span>)</h4>
+            <span id="modal-budget-subtotal" class="modal-tx-subtotal"></span>
+          </div>
+          <div id="modal-budget-tx-list" class="modal-tx-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Notification Banner -->
+    <div id="toast" class="toast">
+      <span id="toast-message">Message text</span>
+      <button class="toast-close" onclick="document.getElementById('toast').classList.remove('show')">✕</button>
+    </div>
+
+  </div>
+
+  <!-- JavaScript Logic -->
+  <script src="preview.js?v=1.0"></script>
+</body>
+</html>
