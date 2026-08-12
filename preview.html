@@ -11,7 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
   
   <!-- Premium Stylesheets -->
-  <link rel="stylesheet" href="preview.css?v=2.1">
+  <link rel="stylesheet" href="preview.css?v=2.2">
   
   <!-- Lucide Icons CDN -->
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -78,9 +78,9 @@
         <i data-lucide="git-compare"></i>
         <span>Monthly Comparison (MoM)</span>
       </button>
-      <button class="hub-tab-btn" data-tab="tags">
-        <i data-lucide="tags"></i>
-        <span>Tag Deep-Dive</span>
+      <button class="hub-tab-btn" data-tab="categories">
+        <i data-lucide="pie-chart"></i>
+        <span>Category Deep-Dive</span>
       </button>
     </nav>
 
@@ -88,7 +88,7 @@
     <main class="hub-main">
 
       <!-- ============================================================
-           TAB 1: WEALTH & ASSET OVERVIEW
+           TAB 1: WEALTH & ASSET OVERVIEW (Single-Screen Executive View)
            ============================================================ -->
       <section id="tab-overview" class="hub-tab-content active">
         
@@ -196,38 +196,6 @@
 
         </div>
 
-        <!-- Bottom Grid: Budget Health Meters + Recent Activity Live Ledger -->
-        <div class="hub-bottom-grid">
-          
-          <!-- Budget Health Meters -->
-          <div class="hub-card">
-            <div class="hub-card-header">
-              <div class="header-text">
-                <h3>Category Budget Meters</h3>
-                <p>Click any category to view full drill-down transactions</p>
-              </div>
-            </div>
-            <div id="hub-budget-meters-list" class="budget-meters-list">
-              <!-- Dynamically populated budget progress cards -->
-            </div>
-          </div>
-
-          <!-- Recent Activity Live Feed -->
-          <div class="hub-card">
-            <div class="hub-card-header">
-              <div class="header-text">
-                <h3>Recent Transactions</h3>
-                <p>Live ledger of latest activity</p>
-              </div>
-              <a href="index.html" class="hub-link">View All History →</a>
-            </div>
-            <div id="hub-recent-tx-list" class="recent-tx-feed">
-              <!-- Dynamically populated recent transactions -->
-            </div>
-          </div>
-
-        </div>
-
       </section>
 
       <!-- ============================================================
@@ -318,32 +286,58 @@
       </section>
 
       <!-- ============================================================
-           TAB 3: TAG DEEP-DIVE ANALYTICS
+           TAB 3: CATEGORY DEEP-DIVE (WITH SUB-TAGS & BUDGET METERS)
            ============================================================ -->
-      <section id="tab-tags" class="hub-tab-content">
+      <section id="tab-categories" class="hub-tab-content">
         
         <div class="mom-summary-banner">
           <div class="mom-banner-text">
-            <h2>Tag-Level Deep-Dive Analytics</h2>
-            <p>Understand exactly who and what is driving your outflow (e.g. Fateh, Personal, Work, Loans, Untagged).</p>
+            <h2>Category & Sub-Tag Deep-Dive Analysis</h2>
+            <p>Comprehensive spending breakdown by category with itemized sub-tags and live budget health tracking.</p>
           </div>
         </div>
 
-        <!-- Tag Summary Grid -->
-        <div id="hub-tag-cards-grid" class="hub-tags-grid">
-          <!-- Dynamically populated tag analytics cards -->
+        <!-- 2-Column Side-by-Side: Category Cards (with Sub-tags) + Category Budget Meters -->
+        <div class="hub-category-deepdive-grid">
+          
+          <!-- Column 1: Category Spending & Sub-Tag Breakdown -->
+          <div class="hub-card">
+            <div class="hub-card-header">
+              <div class="header-text">
+                <h3>Category Outflow Breakdown</h3>
+                <p>Click any category to inspect itemized transactions & sub-tags</p>
+              </div>
+            </div>
+            <div id="hub-category-cards-grid" class="hub-category-breakdown-list">
+              <!-- Dynamically populated category deep-dive cards with sub-tags -->
+            </div>
+          </div>
+
+          <!-- Column 2: Category Budget Meters -->
+          <div class="hub-card">
+            <div class="hub-card-header">
+              <div class="header-text">
+                <h3>Category Budget Meters</h3>
+                <p>Track spending limits and remaining balances per category</p>
+              </div>
+            </div>
+            <div id="hub-budget-meters-list" class="budget-meters-list">
+              <!-- Dynamically populated budget progress cards -->
+            </div>
+          </div>
+
         </div>
 
-        <!-- Tag Distribution Chart -->
+        <!-- Category Spending Distribution Chart -->
         <div class="hub-card" style="margin-top: 24px;">
           <div class="hub-card-header">
             <div class="header-text">
-              <h3>Spending Share by Tag (Current Cycle)</h3>
-              <p>Visual breakdown of expenses attributed to each individual tag</p>
+              <h3>Spending Share by Category (Current Cycle)</h3>
+              <p>Visual representation of expenses incurred in each category</p>
             </div>
           </div>
           <div class="chart-container-bar">
-            <canvas id="hub-chart-tags"></canvas>
+            <canvas id="hub-chart-categories"></canvas>
           </div>
         </div>
 
@@ -408,6 +402,6 @@
   </div>
 
   <!-- JavaScript Logic -->
-  <script src="preview.js?v=2.1"></script>
+  <script src="preview.js?v=2.2"></script>
 </body>
 </html>

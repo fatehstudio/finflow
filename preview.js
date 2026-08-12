@@ -173,8 +173,9 @@ document.addEventListener("DOMContentLoaded", () => {
       // Trigger chart resize / re-render
       if (targetTab === "comparison") {
         renderMoMComparison();
-      } else if (targetTab === "tags") {
-        renderTagsDeepDive();
+      } else if (targetTab === "categories") {
+        renderCategoryDeepDive();
+        renderBudgetMeters();
       }
     });
   });
@@ -199,8 +200,8 @@ function updateHubUI() {
   renderExecutiveKPIs();
   renderDonutChart();
   renderCashFlowRunwayChart();
+  renderCategoryDeepDive();
   renderBudgetMeters();
-  renderRecentActivity();
   setupMoMSelectors();
   lucide.createIcons();
 }
@@ -1034,93 +1035,106 @@ function renderStackedCategoriesChart() {
 }
 
 // =============================================================
-// 7. Tag Deep-Dive Analytics
+// 7. Category Deep-Dive Analytics (with Sub-Tags Included)
 // =============================================================
-function renderTagsDeepDive() {
-  const container = document.getElementById("hub-tag-cards-grid");
+let categoryChartInstance = null;
+
+function renderCategoryDeepDive() {
+  const container = document.getElementById("hub-category-cards-grid");
   if (!container) return;
   container.innerHTML = "";
 
   const cycle = getSalaryCycleRange();
-  const tagsMap = {};
-  let untaggedTotal = 0;
-  let untaggedCount = 0;
+  const expenseCategories = getAllExpenseCategories();
+  
+  const categoryTotals = {};
+  const categorySubtags = {};
   let totalCycleExpense = 0;
+
+  expenseCategories.forEach(cat => {
+    categoryTotals[cat] = 0;
+    categorySubtags[cat] = {};
+  });
 
   state.transactions.forEach(tx => {
     if (tx.Type === "Expense" && tx.Date >= cycle.startDate && tx.Date <= cycle.endDate) {
       const amt = parseFloat(tx.Amount) || 0;
       totalCycleExpense += amt;
+      const cat = tx.Category || "Others";
+      categoryTotals[cat] = (categoryTotals[cat] || 0) + amt;
+
+      if (!categorySubtags[cat]) categorySubtags[cat] = {};
 
       if (!tx.Tags || !tx.Tags.trim()) {
-        untaggedTotal += amt;
-        untaggedCount++;
+        categorySubtags[cat]["No Tag"] = (categorySubtags[cat]["No Tag"] || 0) + amt;
       } else {
-        const list = tx.Tags.split(",").map(t => t.trim()).filter(Boolean);
-        if (list.length === 0) {
-          untaggedTotal += amt;
-          untaggedCount++;
+        const tags = tx.Tags.split(",").map(t => t.trim()).filter(Boolean);
+        if (tags.length === 0) {
+          categorySubtags[cat]["No Tag"] = (categorySubtags[cat]["No Tag"] || 0) + amt;
         } else {
-          list.forEach(t => {
-            if (!tagsMap[t]) tagsMap[t] = { total: 0, count: 0 };
-            tagsMap[t].total += amt;
-            tagsMap[t].count++;
+          tags.forEach(t => {
+            categorySubtags[cat][t] = (categorySubtags[cat][t] || 0) + amt;
           });
         }
       }
     }
   });
 
+  // Sort categories by total spent descending
+  const sortedCategories = Object.keys(categoryTotals).sort((a, b) => categoryTotals[b] - categoryTotals[a]);
+
   const chartLabels = [];
   const chartValues = [];
 
-  // Individual tags
-  Object.keys(tagsMap).sort().forEach(tag => {
-    const data = tagsMap[tag];
-    const pct = totalCycleExpense > 0 ? ((data.total / totalCycleExpense) * 100).toFixed(1) : 0;
+  sortedCategories.forEach(cat => {
+    const total = categoryTotals[cat];
+    if (total === 0 && (!state.budgets || !state.budgets[cat])) return; // skip if 0 and unbudgeted
 
-    chartLabels.push(tag);
-    chartValues.push(data.total);
+    const pct = totalCycleExpense > 0 ? ((total / totalCycleExpense) * 100).toFixed(1) : "0.0";
+    if (total > 0) {
+      chartLabels.push(cat);
+      chartValues.push(total);
+    }
 
     const card = document.createElement("div");
-    card.className = "hub-tag-stat-card";
+    card.className = "hub-category-item-card";
+    card.onclick = () => showCategoryTypeDetailsModal("Expense", cat, cycle);
+
+    // Build subtag chips HTML
+    let subtagsHtml = "";
+    const subtags = categorySubtags[cat] || {};
+    const subtagKeys = Object.keys(subtags);
+    if (subtagKeys.length > 0) {
+      subtagsHtml = `<div class="cat-item-subtags-row">` + 
+        subtagKeys.map(st => {
+          const stAmt = subtags[st];
+          const stPct = total > 0 ? Math.round((stAmt / total) * 100) : 0;
+          const icon = st === "No Tag" ? "⚪" : "🏷️";
+          return `<span class="cat-subtag-pill">${icon} ${escapeHtml(st)}: <b>${formatCurrency(stAmt)}</b> (${stPct}%)</span>`;
+        }).join("") + 
+      `</div>`;
+    }
+
     card.innerHTML = `
-      <div class="tag-stat-header">
-        <h4>🏷️ ${escapeHtml(tag)}</h4>
-        <span class="tag-stat-count">${data.count} items</span>
+      <div class="cat-item-header">
+        <span class="cat-item-name">${escapeHtml(cat)}</span>
+        <span class="cat-item-amount">${formatCurrency(total)} <small style="font-size:0.75rem; color:#94a3b8; font-weight:600;">(${pct}%)</small></span>
       </div>
-      <div class="tag-stat-amount">${formatCurrency(data.total)}</div>
-      <div class="tag-stat-pct">${pct}% of cycle expenses</div>
+      <div class="cat-item-bar-track">
+        <div class="cat-item-bar-fill" style="width: ${pct}%"></div>
+      </div>
+      ${subtagsHtml}
     `;
     container.appendChild(card);
   });
 
-  // Untagged
-  if (untaggedCount > 0) {
-    const untaggedPct = totalCycleExpense > 0 ? ((untaggedTotal / totalCycleExpense) * 100).toFixed(1) : 0;
-    chartLabels.push("No Tag");
-    chartValues.push(untaggedTotal);
-
-    const card = document.createElement("div");
-    card.className = "hub-tag-stat-card";
-    card.innerHTML = `
-      <div class="tag-stat-header">
-        <h4>⚪ No Tag</h4>
-        <span class="tag-stat-count">${untaggedCount} items</span>
-      </div>
-      <div class="tag-stat-amount">${formatCurrency(untaggedTotal)}</div>
-      <div class="tag-stat-pct">${untaggedPct}% of cycle expenses</div>
-    `;
-    container.appendChild(card);
-  }
-
-  // Render Horizontal Bar Chart
-  const ctx = document.getElementById("hub-chart-tags");
+  // Render Category Bar Chart
+  const ctx = document.getElementById("hub-chart-categories");
   if (!ctx) return;
 
-  if (tagChartInstance) tagChartInstance.destroy();
+  if (categoryChartInstance) categoryChartInstance.destroy();
 
-  tagChartInstance = new Chart(ctx, {
+  categoryChartInstance = new Chart(ctx, {
     type: "bar",
     data: {
       labels: chartLabels,
@@ -1128,8 +1142,8 @@ function renderTagsDeepDive() {
         {
           label: "Total Spent",
           data: chartValues,
-          backgroundColor: "#8b5cf6",
-          borderRadius: 8
+          backgroundColor: "#6366f1",
+          borderRadius: 6
         }
       ]
     },
