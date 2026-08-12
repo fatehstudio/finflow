@@ -527,7 +527,12 @@ function setupSettingsForm() {
   elements.formSettings.addEventListener("submit", (e) => {
     e.preventDefault();
     
-    const url = elements.settingsApiUrl.value.trim();
+    let url = elements.settingsApiUrl.value.trim();
+    if (url.includes("/edit")) {
+      url = url.replace(/\/edit.*$/, "/exec");
+      elements.settingsApiUrl.value = url;
+      showToast("Auto-corrected Google Script URL from /edit to /exec!");
+    }
     const currency = elements.settingsCurrency.value.trim();
     const defaultView = elements.settingsDefaultView ? elements.settingsDefaultView.value : "standard";
     

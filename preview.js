@@ -1949,7 +1949,14 @@ document.addEventListener("keydown", e => {
 // 9. Google Sheets Synchronization & Delete Handler
 // =============================================================
 function syncWithSheets(interactive = false) {
-  if (!state.settings.apiUrl) return;
+  let url = (state.settings.apiUrl || "").trim();
+  if (!url) return;
+
+  if (url.includes("/edit")) {
+    url = url.replace(/\/edit.*$/, "/exec");
+    state.settings.apiUrl = url;
+    saveStateToLocal();
+  }
 
   if (interactive) showToast("Syncing with Google Sheets...");
 
@@ -1958,7 +1965,7 @@ function syncWithSheets(interactive = false) {
   if (statusPill) statusPill.className = "hub-status-pill disconnected";
   if (statusText) statusText.textContent = "Syncing...";
 
-  fetch(`${state.settings.apiUrl}?action=getDashboardData`)
+  fetch(`${url}?action=getDashboardData`)
     .then(res => {
       if (!res.ok) throw new Error("Network response not OK");
       return res.json();
