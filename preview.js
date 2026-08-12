@@ -222,15 +222,17 @@ function renderExecutiveKPIs() {
   let cycleInvestment = 0;
   let cycleIncomeCount = 0;
 
-  // All-time & Cycle metrics
+  // Cumulative up to current cycle & Active cycle metrics
   state.transactions.forEach(tx => {
     const amt = parseFloat(tx.Amount) || 0;
 
-    // All time totals
-    if (tx.Type === "Income") totalIncome += amt;
-    else if (tx.Type === "Expense") totalExpense += amt;
-    else if (tx.Type === "Savings") totalSavings += amt;
-    else if (tx.Type === "Investment") totalInvestment += amt;
+    // Cumulative totals up to current cycle (ignores future recurring payments)
+    if (tx.Date <= cycle.endDate) {
+      if (tx.Type === "Income") totalIncome += amt;
+      else if (tx.Type === "Expense") totalExpense += amt;
+      else if (tx.Type === "Savings") totalSavings += amt;
+      else if (tx.Type === "Investment") totalInvestment += amt;
+    }
 
     // Active salary cycle totals
     if (tx.Date >= cycle.startDate && tx.Date <= cycle.endDate) {
@@ -244,16 +246,17 @@ function renderExecutiveKPIs() {
   });
 
   // Net Balance / Net Worth
-  const netWorth = totalIncome - totalExpense;
-  const liquidCash = Math.max(netWorth - totalSavings - totalInvestment, 0);
+  const cycleSurplus = cycleIncome - cycleExpense - cycleSavings - cycleInvestment;
+  const netWorth = totalIncome > 0 ? (totalIncome - totalExpense) : (cycleSurplus + totalSavings + totalInvestment);
   const investedSaved = totalSavings + totalInvestment;
+  const liquidCash = Math.max(netWorth - investedSaved, 0);
 
   document.getElementById("kpi-val-net").textContent = formatCurrency(netWorth);
   document.getElementById("lbl-split-liquid").textContent = formatCurrency(liquidCash);
   document.getElementById("lbl-split-invested").textContent = formatCurrency(investedSaved);
 
   const totalAssets = liquidCash + investedSaved;
-  const liquidPct = totalAssets > 0 ? (liquidCash / totalAssets) * 100 : 50;
+  const liquidPct = totalAssets > 0 ? (liquidCash / totalAssets) * 100 : (netWorth > 0 ? 50 : 0);
   const investedPct = 100 - liquidPct;
 
   document.getElementById("bar-split-liquid").style.width = `${liquidPct}%`;
