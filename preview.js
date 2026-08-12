@@ -1395,9 +1395,23 @@ function closeBudgetModal() {
 let activeTypeModalCategory = "ALL";
 let activeTypeModalTag = "ALL";
 
-function showCategoryTypeDetailsModal(txType = "Expense", cycle = getSalaryCycleRange(), selectedCategory = "ALL", selectedTag = "ALL") {
+function showCategoryTypeDetailsModal(txType = "Expense", arg2 = null, arg3 = "ALL", arg4 = "ALL") {
   const modal = document.getElementById("budget-modal");
   if (!modal) return;
+
+  let cycle = getSalaryCycleRange();
+  let selectedCategory = "ALL";
+  let selectedTag = "ALL";
+
+  if (arg2 && typeof arg2 === "object" && arg2.startDate) {
+    cycle = arg2;
+    if (typeof arg3 === "string") selectedCategory = arg3;
+    if (typeof arg4 === "string") selectedTag = arg4;
+  } else if (typeof arg2 === "string") {
+    selectedCategory = arg2;
+    if (arg3 && typeof arg3 === "object" && arg3.startDate) cycle = arg3;
+    if (typeof arg4 === "string") selectedTag = arg4;
+  }
 
   activeTypeModalCategory = selectedCategory;
   activeTypeModalTag = selectedTag;
