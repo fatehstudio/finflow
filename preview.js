@@ -211,30 +211,23 @@ function updateHubUI() {
 function renderExecutiveKPIs() {
   const cycle = getSalaryCycleRange();
 
-  let totalIncome = 0;
-  let totalExpense = 0;
-  let totalSavings = 0;
-  let totalInvestment = 0;
-
   let cycleIncome = 0;
   let cycleExpense = 0;
   let cycleSavings = 0;
   let cycleInvestment = 0;
   let cycleIncomeCount = 0;
 
-  // Cumulative up to current cycle & Active cycle metrics
+  // Previous Cycle for MoM comparison
+  const today = new Date();
+  const prevCycleDate = new Date(today.getFullYear(), today.getMonth() - 1, 15);
+  const prevCycle = getSalaryCycleRange(prevCycleDate);
+  let prevCycleIncome = 0;
+  let prevCycleExpense = 0;
+
   state.transactions.forEach(tx => {
     const amt = parseFloat(tx.Amount) || 0;
 
-    // Cumulative totals up to current cycle (ignores future recurring payments)
-    if (tx.Date <= cycle.endDate) {
-      if (tx.Type === "Income") totalIncome += amt;
-      else if (tx.Type === "Expense") totalExpense += amt;
-      else if (tx.Type === "Savings") totalSavings += amt;
-      else if (tx.Type === "Investment") totalInvestment += amt;
-    }
-
-    // Active salary cycle totals
+    // Active salary cycle totals (e.g. 25th July to 24th August)
     if (tx.Date >= cycle.startDate && tx.Date <= cycle.endDate) {
       if (tx.Type === "Income") {
         cycleIncome += amt;
@@ -243,20 +236,46 @@ function renderExecutiveKPIs() {
       else if (tx.Type === "Savings") cycleSavings += amt;
       else if (tx.Type === "Investment") cycleInvestment += amt;
     }
+
+    // Previous cycle totals
+    if (tx.Date >= prevCycle.startDate && tx.Date <= prevCycle.endDate) {
+      if (tx.Type === "Income") prevCycleIncome += amt;
+      else if (tx.Type === "Expense") prevCycleExpense += amt;
+    }
   });
 
-  // Net Balance / Net Worth
-  const cycleSurplus = cycleIncome - cycleExpense - cycleSavings - cycleInvestment;
-  const netWorth = totalIncome > 0 ? (totalIncome - totalExpense) : (cycleSurplus + totalSavings + totalInvestment);
-  const investedSaved = totalSavings + totalInvestment;
-  const liquidCash = Math.max(netWorth - investedSaved, 0);
+  // Active Salary Cycle Net Worth / Retained Capital (25th July - 24th August)
+  const cycleNetWorth = cycleIncome - cycleExpense;
+  const cycleLiquidCash = Math.max(cycleIncome - cycleExpense - cycleSavings - cycleInvestment, 0);
+  const cycleInvestedSaved = cycleSavings + cycleInvestment;
 
-  document.getElementById("kpi-val-net").textContent = formatCurrency(netWorth);
-  document.getElementById("lbl-split-liquid").textContent = formatCurrency(liquidCash);
-  document.getElementById("lbl-split-invested").textContent = formatCurrency(investedSaved);
+  // MoM Delta calculation
+  const prevNetWorth = prevCycleIncome - prevCycleExpense;
+  let momDeltaText = "+0.0% MoM";
+  let momGrowthClass = "growth";
 
-  const totalAssets = liquidCash + investedSaved;
-  const liquidPct = totalAssets > 0 ? (liquidCash / totalAssets) * 100 : (netWorth > 0 ? 50 : 0);
+  if (prevNetWorth !== 0) {
+    const diff = cycleNetWorth - prevNetWorth;
+    const pct = ((diff / Math.abs(prevNetWorth)) * 100).toFixed(1);
+    momDeltaText = `${diff >= 0 ? "+" : ""}${pct}% MoM`;
+    momGrowthClass = diff >= 0 ? "growth" : "danger";
+  } else if (cycleNetWorth !== 0) {
+    momDeltaText = cycleNetWorth > 0 ? "+100% MoM" : "-100% MoM";
+    momGrowthClass = cycleNetWorth > 0 ? "growth" : "danger";
+  }
+
+  const deltaEl = document.getElementById("kpi-net-delta");
+  if (deltaEl) {
+    deltaEl.textContent = momDeltaText;
+    deltaEl.className = `kpi-badge ${momGrowthClass}`;
+  }
+
+  document.getElementById("kpi-val-net").textContent = formatCurrency(cycleNetWorth);
+  document.getElementById("lbl-split-liquid").textContent = formatCurrency(cycleLiquidCash);
+  document.getElementById("lbl-split-invested").textContent = formatCurrency(cycleInvestedSaved);
+
+  const totalCycleAssets = cycleLiquidCash + cycleInvestedSaved;
+  const liquidPct = totalCycleAssets > 0 ? (cycleLiquidCash / totalCycleAssets) * 100 : (cycleNetWorth > 0 ? 50 : 0);
   const investedPct = 100 - liquidPct;
 
   document.getElementById("bar-split-liquid").style.width = `${liquidPct}%`;
@@ -269,7 +288,6 @@ function renderExecutiveKPIs() {
   // Monthly Expenses & Daily Burn Rate
   document.getElementById("kpi-val-expense").textContent = formatCurrency(cycleExpense);
 
-  const today = new Date();
   const startD = new Date(cycle.startDate);
   const endD = new Date(cycle.endDate);
 
