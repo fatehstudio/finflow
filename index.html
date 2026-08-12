@@ -3,354 +3,349 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>FinFlow - Personal Finance Tracker</title>
+  <title>FinFlow Finance Hub - Professional Wealth & Analytics Dashboard</title>
+  
+  <!-- Google Fonts: Plus Jakarta Sans for executive fintech typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
   
   <!-- Premium Stylesheets -->
-  <link rel="stylesheet" href="style.css?v=4.1">
+  <link rel="stylesheet" href="preview.css?v=2.4">
   
-  <!-- Lucide Icons CDN for sleek vector graphics -->
+  <!-- Lucide Icons CDN -->
   <script src="https://unpkg.com/lucide@latest"></script>
-  <!-- Chart.js CDN for beautiful dashboard visualizations -->
+  <!-- Chart.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
-  <div class="app-container">
-    
-    <!-- Offline Banner -->
-    <div id="offline-banner" class="offline-banner">
-      Offline Mode - Syncing to local storage
+  <!-- Top Preview Notice Banner -->
+  <div class="preview-notice-bar">
+    <div class="notice-left">
+      <span class="sparkle-badge"><i data-lucide="sparkles"></i> PRO DASHBOARD</span>
+      <span>Viewing <b>FinFlow Finance Hub Pro</b>. Connected to your live data.</span>
     </div>
+    <div class="notice-right">
+      <a href="standard.html" class="switch-standard-btn">
+        <i data-lucide="arrow-left"></i> Standard App
+      </a>
+    </div>
+  </div>
+
+  <div class="hub-container">
     
     <!-- Header -->
-    <header>
-      <div class="brand">
-        <div class="brand-icon">F</div>
-        <div class="brand-title">
-          <h1>FinFlow</h1>
-          <p>Cash Flow Manager</p>
+    <header class="hub-header">
+      <div class="hub-brand-group">
+        <div class="hub-logo">
+          <span>F</span>
+        </div>
+        <div class="hub-brand-text">
+          <div class="brand-line">
+            <h1>FinFlow</h1>
+            <span class="hub-badge">Finance Hub Pro</span>
+          </div>
+          <p>Wealth Management & Cash Flow Command Center</p>
         </div>
       </div>
-      <div style="display: flex; align-items: center; gap: 12px;">
-        <a href="preview.html" class="preview-switch-badge" title="Open Finance Hub Professional Dashboard">
-          <i data-lucide="sparkles" style="width: 14px; height: 14px;"></i>
-          <span>Finance Hub Pro</span>
+
+      <div class="hub-header-actions">
+        <div id="hub-status-pill" class="hub-status-pill disconnected" title="Google Sheets Sync">
+          <span class="status-dot"></span>
+          <span id="hub-status-text">Connecting</span>
+        </div>
+        
+        <button id="btn-hub-sync" class="hub-btn secondary" onclick="syncWithSheets(true)" title="Sync with Google Sheets">
+          <i data-lucide="refresh-cw"></i>
+          <span>Sync</span>
+        </button>
+
+        <a href="standard.html" class="hub-btn primary">
+          <i data-lucide="arrow-left-right"></i>
+          <span>Standard App</span>
         </a>
-        <div id="status-indicator" class="status-indicator disconnected" title="Sync Status"></div>
       </div>
     </header>
 
-    <!-- Main Content Panel -->
-    <main>
-      
-      <!-- 1. Home / Dashboard View -->
-      <section id="view-home" class="view">
-        <!-- Top Hero Grid: Balance Card + Quick Stats/Filter -->
-        <div class="dashboard-hero-grid">
-          <!-- Balance Card -->
-          <div class="balance-card">
-            <div class="balance-main-group">
-              <div class="label">Net Balance</div>
-              <div id="val-net-balance" class="value">RM 0.00</div>
-            </div>
-            
-            <div class="balance-grid">
-              <div class="balance-grid-item clickable-kpi" onclick="showInflowDetailsModal(getSalaryCycleRange())" title="Click to view all Inflow transactions & sub-tags">
-                <div class="mini-label" style="display: flex; align-items: center; justify-content: space-between;">Monthly Income <i data-lucide="chevron-right" style="width: 12px; height: 12px; opacity: 0.8;"></i></div>
-                <div id="val-monthly-income" class="mini-value">RM 0.00</div>
-              </div>
-              <div class="balance-grid-item clickable-kpi" onclick="showOutflowDetailsModal(getSalaryCycleRange())" title="Click to view all Outflow transactions & sub-tags">
-                <div class="mini-label" style="display: flex; align-items: center; justify-content: space-between;">Monthly Expenses <i data-lucide="chevron-right" style="width: 12px; height: 12px; opacity: 0.8;"></i></div>
-                <div id="val-monthly-expenses" class="mini-value">RM 0.00</div>
-              </div>
-            </div>
-          </div>
+    <!-- Sub-Navigation Navigation Pills -->
+    <nav class="hub-nav-tabs">
+      <button class="hub-tab-btn active" data-tab="overview">
+        <i data-lucide="layout-dashboard"></i>
+        <span>Wealth & Asset Overview</span>
+      </button>
+      <button class="hub-tab-btn" data-tab="comparison">
+        <i data-lucide="git-compare"></i>
+        <span>Monthly Comparison (MoM)</span>
+      </button>
+      <button class="hub-tab-btn" data-tab="categories">
+        <i data-lucide="pie-chart"></i>
+        <span>Category Deep-Dive</span>
+      </button>
+    </nav>
 
-          <!-- Hero Side: Savings, Investment & Date Filter -->
-          <div class="dashboard-hero-side">
-            <!-- Savings & Investment Row -->
-            <div class="secondary-metrics">
-              <div class="metric-pill savings clickable-kpi" onclick="showSavingsDetailsModal(getSalaryCycleRange())" title="Click to view deep-dive Savings transactions, categories & sub-tags">
-                <span class="pill-label" style="display: flex; align-items: center; justify-content: space-between;">Total Savings <i data-lucide="chevron-right" style="width: 12px; height: 12px; opacity: 0.8;"></i></span>
-                <span id="val-monthly-savings" class="pill-value">RM 0.00</span>
-              </div>
-              <div class="metric-pill investment clickable-kpi" onclick="showInvestmentDetailsModal(getSalaryCycleRange())" title="Click to view deep-dive Investment transactions, categories & sub-tags">
-                <span class="pill-label" style="display: flex; align-items: center; justify-content: space-between;">Total Invested <i data-lucide="chevron-right" style="width: 12px; height: 12px; opacity: 0.8;"></i></span>
-                <span id="val-monthly-investments" class="pill-value">RM 0.00</span>
-              </div>
-            </div>
+    <!-- Main Content Area -->
+    <main class="hub-main">
 
-            <!-- Date Range Selector -->
-            <div class="chart-card date-filter-card">
-              <h3 style="font-size: 0.95rem; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
-                <i data-lucide="calendar" style="width: 18px; stroke-width: 2.2;"></i> Date Range Filter
-              </h3>
-              <div class="date-filter-grid">
-                <div class="form-group" style="margin-bottom: 0;">
-                  <label for="dash-start-date" style="font-size: 0.75rem; font-weight: 700;">From</label>
-                  <input type="date" id="dash-start-date" class="form-control" style="padding: 8px 12px; font-size: 0.85rem;">
-                </div>
-                <div class="form-group" style="margin-bottom: 0;">
-                  <label for="dash-end-date" style="font-size: 0.75rem; font-weight: 700;">To</label>
-                  <input type="date" id="dash-end-date" class="form-control" style="padding: 8px 12px; font-size: 0.85rem;">
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Charts Grid (2 columns on laptop) -->
-        <div class="dashboard-charts-grid">
-          <!-- Chart: Expense Breakdown -->
-          <div class="chart-card">
-            <h3>
-              <span>Expense Distribution</span>
-              <div style="display: flex; gap: 8px; align-items: center;">
-                <span id="lbl-expense-total" style="font-size: 0.75rem; font-weight: 500; color: var(--text-muted); background-color: var(--bg-tertiary); padding: 2px 8px; border-radius: var(--radius-full);">Total: RM 0.00</span>
-                <button onclick="downloadChartImage()" class="tx-delete-btn" title="Download Chart Image" style="color: var(--primary); padding: 4px; display: flex; align-items: center;">
-                  <i data-lucide="image" style="width: 16px; height: 16px;"></i>
-                </button>
-                <button onclick="downloadChartCSV()" class="tx-delete-btn" title="Export CSV Data" style="color: var(--primary); padding: 4px; display: flex; align-items: center;">
-                  <i data-lucide="download" style="width: 16px; height: 16px;"></i>
-                </button>
-              </div>
-            </h3>
-            <div class="chart-wrapper">
-              <canvas id="chart-expenses-category"></canvas>
-            </div>
-          </div>
-
-          <!-- Chart: Cash Flow Trend -->
-          <div class="chart-card">
-            <h3>Cash Flow Trend <span>Salary Cycles</span></h3>
-            <div class="chart-wrapper">
-              <canvas id="chart-cashflow-trend"></canvas>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- 2. Add Transaction View -->
-      <section id="view-add" class="view active">
-        <h2 id="add-view-title" style="font-size: 1.25rem; font-weight: 700; margin-bottom: 20px;">New Transaction</h2>
+      <!-- ============================================================
+           TAB 1: WEALTH & ASSET OVERVIEW (Single-Screen Executive View)
+           ============================================================ -->
+      <section id="tab-overview" class="hub-tab-content active">
         
-        <form id="form-transaction" onsubmit="return false;">
-          <!-- Type Selector -->
-          <div class="form-group">
-            <label>Transaction Type</label>
-            <div class="type-selector">
-              <button type="button" class="type-btn active" data-type="Expense">Expense</button>
-              <button type="button" class="type-btn" data-type="Income">Income</button>
-              <button type="button" class="type-btn" data-type="Savings">Savings</button>
-              <button type="button" class="type-btn" data-type="Investment">Invest</button>
-            </div>
-          </div>
-
-          <!-- Date Input -->
-          <div class="form-group">
-            <label for="tx-date">Date</label>
-            <input type="date" id="tx-date" class="form-control" required>
-          </div>
-
-          <!-- Amount Input -->
-          <div class="form-group">
-            <label for="tx-amount">Amount</label>
-            <input type="number" id="tx-amount" class="form-control" placeholder="0.00" step="0.01" min="0.01" required>
-          </div>
-
-          <!-- Category Grid -->
-          <div class="form-group">
-            <label>Category</label>
-            <div class="category-select-wrapper">
-              <div id="category-grid" class="category-grid">
-                <!-- Dynamically rendered -->
-              </div>
-            </div>
-          </div>
-
-          <!-- Notes Input -->
-          <div class="form-group">
-            <label for="tx-notes">Notes (Optional)</label>
-            <textarea id="tx-notes" class="form-control" placeholder="Enter notes here..."></textarea>
-          </div>
-
-          <!-- Recurring Transaction Checkbox -->
-          <div class="form-group" style="flex-direction: row; align-items: center; gap: 8px; cursor: pointer; padding: 4px 0;">
-            <input type="checkbox" id="tx-is-recurring" style="width: 18px; height: 18px; accent-color: var(--primary);">
-            <label for="tx-is-recurring" style="font-weight: 700; cursor: pointer; margin-left: 0;">Is this a recurring bill?</label>
-          </div>
-
-          <!-- Recurring Details Panel -->
-          <div id="recurring-details-panel" style="display: none; background-color: var(--bg-tertiary); padding: 16px; border-radius: var(--radius-md); margin-bottom: 20px; border: 1px dashed var(--border-focus); flex-direction: column; gap: 12px; animation: fadeIn 0.3s ease;">
-            <div class="form-group" style="margin-bottom: 0;">
-              <label for="tx-recurring-freq">Frequency</label>
-              <select id="tx-recurring-freq" class="form-control" style="padding: 10px 14px;">
-                <option value="Monthly">Monthly</option>
-                <option value="Weekly">Weekly</option>
-                <option value="Yearly">Yearly</option>
-              </select>
-            </div>
-            <div class="form-group" style="margin-bottom: 0;">
-              <label for="tx-recurring-count">Duration (Times)</label>
-              <input type="number" id="tx-recurring-count" class="form-control" style="padding: 10px 14px;" value="6" min="2" max="24">
-              <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; line-height: 1.2;">
-                This will automatically generate multiple entries (e.g. 6 monthly bills) in your log.
-              </p>
-            </div>
-          </div>
-
-          <!-- Tags Selection -->
-          <div class="form-group">
-            <label>Tags (Select or Enter Custom)</label>
-            <div style="display: flex; flex-direction: column; gap: 8px;">
-              <div id="tag-choices" style="display: flex; flex-wrap: wrap; gap: 6px;">
-                <!-- Tags rendered as pills dynamically -->
-              </div>
-              <input type="text" id="tx-custom-tag" class="form-control" placeholder="Add custom tag (press Enter)" style="padding: 8px 12px; font-size: 0.85rem;">
-            </div>
-          </div>
-
-          <!-- Submit Button -->
-          <button type="submit" id="btn-save-transaction" class="btn-primary">
-            <i id="btn-save-tx-icon" data-lucide="plus-circle"></i> <span id="btn-save-tx-text">Save Transaction</span>
-          </button>
-        </form>
-      </section>
-
-      <!-- 3. History View -->
-      <section id="view-history" class="view">
-        <h2 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 16px;">Transaction History</h2>
-        
-        <!-- Search and Filters -->
-        <div class="form-group" style="margin-bottom: 12px;">
-          <input type="text" id="history-search" class="form-control" placeholder="Search notes or categories...">
-        </div>
-        
-        <div class="filter-bar">
-          <button class="filter-btn active" data-filter="all">All</button>
-          <button class="filter-btn" data-filter="Expense">Expense</button>
-          <button class="filter-btn" data-filter="Income">Income</button>
-          <button class="filter-btn" data-filter="Savings">Savings</button>
-          <button class="filter-btn" data-filter="Investment">Invest</button>
-        </div>
-
-        <!-- History List -->
-        <div id="history-list" class="transaction-list">
-          <!-- Transactions populated dynamically -->
-        </div>
-      </section>
-
-      <!-- 4. Budgets View -->
-      <section id="view-budgets" class="view">
-        <h2 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 20px;">Monthly Budgets</h2>
-        
-        <!-- Budget List -->
-        <div id="budget-progress-container" class="budget-list" style="margin-bottom: 24px;">
-          <!-- Dynamically populated budget bars -->
-        </div>
-
-        <!-- Budget Configuration Panel -->
-        <div class="budget-editor-card">
-          <h3 style="font-size: 0.95rem; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
-            <i data-lucide="sliders" style="width: 18px; stroke-width: 2;"></i> Configure Budgets
-          </h3>
-          <form id="form-budgets" onsubmit="return false;">
-            <div id="budget-inputs-grid" style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px;">
-              <!-- Dynamically populated inputs per expense category -->
-            </div>
-            <button type="submit" id="btn-save-budgets" class="btn-primary">
-              <i data-lucide="save"></i> Save Budgets
-            </button>
-          </form>
-        </div>
-      </section>
-
-      <!-- 5. Settings View -->
-      <section id="view-settings" class="view">
-        <h2 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 20px;">Settings</h2>
-        
-        <div class="chart-card" style="margin-bottom: 20px;">
-          <h3 style="margin-bottom: 12px;">App Configuration</h3>
+        <!-- 4-KPI Executive Stat Grid -->
+        <div class="hub-kpi-grid">
           
-          <form id="form-settings" onsubmit="return false;">
-            <!-- Apps Script Web App URL -->
-            <div class="form-group">
-              <label for="settings-api-url">Google Apps Script URL</label>
-              <input type="url" id="settings-api-url" class="form-control" placeholder="https://script.google.com/macros/s/.../exec">
-              <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; line-height: 1.3;">
-                Create a spreadsheet, paste the backend code in Extensions -> Apps Script, deploy it as a Web App, and paste the URL here.
-              </p>
+          <!-- Card 1: Total Net Worth -->
+          <div class="kpi-card highlight-card">
+            <div class="kpi-card-header">
+              <span class="kpi-title">Total Net Worth / Balance</span>
+              <span class="kpi-badge growth" id="kpi-net-delta">+0.0% MoM</span>
             </div>
-
-            <!-- Currency Symbol -->
-            <div class="form-group">
-              <label for="settings-currency">Currency Symbol</label>
-              <input type="text" id="settings-currency" class="form-control" value="RM" maxlength="5">
+            <div class="kpi-primary-val" id="kpi-val-net">RM 0.00</div>
+            
+            <div class="asset-split-wrapper">
+              <div class="asset-split-bar">
+                <div id="bar-split-liquid" class="split-segment liquid" style="width: 50%" title="Liquid Cash"></div>
+                <div id="bar-split-invested" class="split-segment invested" style="width: 50%" title="Savings & Investments"></div>
+              </div>
+              <div class="asset-split-legend">
+                <span class="legend-item"><span class="dot liquid"></span> Liquid: <b id="lbl-split-liquid">RM 0.00</b></span>
+                <span class="legend-item"><span class="dot invested"></span> Invested/Saved: <b id="lbl-split-invested">RM 0.00</b></span>
+              </div>
             </div>
+          </div>
 
-            <!-- Default Dashboard Style -->
-            <div class="form-group">
-              <label for="settings-default-view">Default Dashboard Style</label>
-              <select id="settings-default-view" class="form-control">
-                <option value="standard">Standard FinFlow (Pastel Mobile & Desktop)</option>
-                <option value="financehub">Finance Hub Pro (Dark Wealth & Analytics Dashboard)</option>
-              </select>
-              <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; line-height: 1.3;">
-                Choose which dashboard automatically opens when you visit FinFlow. You can switch between them anytime using the switcher button.
-              </p>
+          <!-- Card 2: Monthly Inflow -->
+          <div class="kpi-card clickable-card" onclick="showInflowDetailsModal(getSalaryCycleRange())" title="Click to view detailed Inflow transactions & sub-tags">
+            <div class="kpi-card-header">
+              <span class="kpi-title">Monthly Income (Inflow)</span>
+              <span class="kpi-icon-pill income"><i data-lucide="arrow-down-left"></i></span>
             </div>
+            <div class="kpi-primary-val text-income" id="kpi-val-income">RM 0.00</div>
+            <div class="kpi-subtext">
+              <span>Salary Cycle Inflow</span>
+              <span id="kpi-income-tx-count" class="kpi-sub-badge">0 deposits</span>
+            </div>
+          </div>
 
-            <button type="submit" id="btn-save-settings" class="btn-primary">
-              <i data-lucide="check"></i> Save Settings
-            </button>
-          </form>
+          <!-- Card 3: Monthly Expenses & Burn Rate -->
+          <div class="kpi-card clickable-card" onclick="showOutflowDetailsModal(getSalaryCycleRange())" title="Click to view detailed Outflow transactions & sub-tags">
+            <div class="kpi-card-header">
+              <span class="kpi-title">Monthly Outflow (Expenses)</span>
+              <span class="kpi-icon-pill expense"><i data-lucide="arrow-up-right"></i></span>
+            </div>
+            <div class="kpi-primary-val text-expense" id="kpi-val-expense">RM 0.00</div>
+            <div class="kpi-subtext">
+              <span>Burn Rate: <b id="kpi-burn-rate">RM 0.00/day</b></span>
+              <span id="kpi-days-left" class="kpi-sub-badge">0 days left</span>
+            </div>
+          </div>
+
+          <!-- Card 4: Savings Rate & Capital Retained -->
+          <div class="kpi-card clickable-card" onclick="showSavingsDetailsModal(getSalaryCycleRange())" title="Click to view deep-dive Savings transactions, categories & sub-tags">
+            <div class="kpi-card-header">
+              <span class="kpi-title">Savings & Retention Rate</span>
+              <span class="kpi-icon-pill savings"><i data-lucide="shield-check"></i></span>
+            </div>
+            <div class="kpi-primary-val text-savings" id="kpi-val-savings-rate">0.0%</div>
+            <div class="kpi-subtext">
+              <span>Retained: <b id="kpi-val-retained">RM 0.00</b></span>
+              <span id="kpi-savings-status" class="kpi-sub-badge">Target > 20%</span>
+            </div>
+          </div>
+
         </div>
 
-        <!-- Sync Actions -->
-        <div class="chart-card" style="margin-bottom: 20px;">
-          <h3 style="margin-bottom: 12px;">Data Management</h3>
-          <button id="btn-sync-now" class="btn-primary" style="background: var(--bg-tertiary); color: var(--text-primary); box-shadow: none; border: 1px solid var(--border); margin-bottom: 10px;">
-            <i data-lucide="refresh-cw"></i> Sync with Google Sheets
-          </button>
-          <button id="btn-clear-local" class="btn-primary" style="background: var(--expense-light); color: var(--expense); box-shadow: none; border: 1px solid var(--expense); font-size: 0.85rem; padding: 10px;">
-            <i data-lucide="trash-2"></i> Clear Local Cache & Reset
-          </button>
+        <!-- Middle Charts Section: Donut + Cash Flow Runway -->
+        <div class="hub-charts-grid">
+          
+          <!-- Chart 1: Asset / Expense Allocation Donut -->
+          <div class="hub-card">
+            <div class="hub-card-header">
+              <div class="header-text">
+                <h3>Expense Distribution</h3>
+                <p>Spending across categories in active cycle</p>
+              </div>
+              <div class="hub-card-actions">
+                <button onclick="downloadHubDonutImage()" class="mini-tool-btn" title="Download Chart Image">
+                  <i data-lucide="image"></i>
+                </button>
+              </div>
+            </div>
+            <div class="chart-container-donut">
+              <canvas id="hub-chart-donut"></canvas>
+            </div>
+            <div id="hub-donut-legend-pills" class="donut-pills-row">
+              <!-- Dynamically populated category pill badges -->
+            </div>
+          </div>
+
+          <!-- Chart 2: Cash Flow Runway & Trend -->
+          <div class="hub-card">
+            <div class="hub-card-header">
+              <div class="header-text">
+                <h3>Cash Flow Runway</h3>
+                <p>Income vs Expenses over past 6 salary cycles</p>
+              </div>
+              <span class="cycle-indicator-tag">25th - 24th Cycle</span>
+            </div>
+            <div class="chart-container-bar">
+              <canvas id="hub-chart-trend"></canvas>
+            </div>
+          </div>
+
         </div>
+
+      </section>
+
+      <!-- ============================================================
+           TAB 2: MONTHLY COMPARISON (MoM ANALYTICS)
+           ============================================================ -->
+      <section id="tab-comparison" class="hub-tab-content">
+        
+        <!-- MoM Header Card -->
+        <div class="mom-summary-banner">
+          <div class="mom-banner-text">
+            <h2>Month-over-Month (MoM) Expense Comparison</h2>
+            <p>Analyze how your spending habits evolved between consecutive salary cycles.</p>
+          </div>
+
+          <div class="mom-cycles-selector">
+            <div class="selector-group">
+              <label>Compare Current Cycle</label>
+              <select id="mom-select-current" class="hub-select"></select>
+            </div>
+            <div class="selector-arrow">➔</div>
+            <div class="selector-group">
+              <label>With Previous Cycle</label>
+              <select id="mom-select-previous" class="hub-select"></select>
+            </div>
+          </div>
+        </div>
+
+        <!-- MoM High-Level Delta Cards -->
+        <div class="mom-delta-grid">
+          <div class="mom-delta-card">
+            <span class="delta-label">Total Expense Delta</span>
+            <div id="mom-val-total-delta" class="delta-value">RM 0.00</div>
+            <span id="mom-val-pct-delta" class="delta-sub">0.0% variance</span>
+          </div>
+          <div class="mom-delta-card">
+            <span class="delta-label">Largest Increase</span>
+            <div id="mom-val-top-increase" class="delta-value text-expense">None</div>
+            <span id="mom-sub-top-increase" class="delta-sub">No increase detected</span>
+          </div>
+          <div class="mom-delta-card">
+            <span class="delta-label">Largest Reduction (Saved)</span>
+            <div id="mom-val-top-saved" class="delta-value text-income">None</div>
+            <span id="mom-sub-top-saved" class="delta-sub">No reduction detected</span>
+          </div>
+        </div>
+
+        <!-- MoM Comparison Table -->
+        <div class="hub-card">
+          <div class="hub-card-header">
+            <div class="header-text">
+              <h3>Category-by-Category Variance Breakdown</h3>
+              <p>Direct comparison of expenses incurred in each category</p>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="hub-table">
+              <thead>
+                <tr>
+                  <th>Category</th>
+                  <th>Previous Cycle</th>
+                  <th>Current Cycle</th>
+                  <th>Variance (RM)</th>
+                  <th>Growth / Change</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="mom-table-body">
+                <!-- Dynamically populated MoM comparison rows -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Stacked 6-Cycle Trend Chart -->
+        <div class="hub-card" style="margin-top: 24px;">
+          <div class="hub-card-header">
+            <div class="header-text">
+              <h3>Multi-Cycle Category Spending History</h3>
+              <p>Track which categories take up the largest portion over time</p>
+            </div>
+          </div>
+          <div class="chart-container-stacked">
+            <canvas id="hub-chart-stacked-categories"></canvas>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ============================================================
+           TAB 3: CATEGORY DEEP-DIVE (WITH SUB-TAGS & BUDGET METERS)
+           ============================================================ -->
+      <section id="tab-categories" class="hub-tab-content">
+        
+        <div class="mom-summary-banner">
+          <div class="mom-banner-text">
+            <h2>Category & Sub-Tag Deep-Dive Analysis</h2>
+            <p>Comprehensive spending breakdown by category with itemized sub-tags and live budget health tracking.</p>
+          </div>
+        </div>
+
+        <!-- 2-Column Side-by-Side: Category Cards (with Sub-tags) + Category Budget Meters -->
+        <div class="hub-category-deepdive-grid">
+          
+          <!-- Column 1: Category Spending & Sub-Tag Breakdown -->
+          <div class="hub-card">
+            <div class="hub-card-header">
+              <div class="header-text">
+                <h3>Category Outflow Breakdown</h3>
+                <p>Click any category to inspect itemized transactions & sub-tags</p>
+              </div>
+            </div>
+            <div id="hub-category-cards-grid" class="hub-category-breakdown-list">
+              <!-- Dynamically populated category deep-dive cards with sub-tags -->
+            </div>
+          </div>
+
+          <!-- Column 2: Category Budget Meters -->
+          <div class="hub-card">
+            <div class="hub-card-header">
+              <div class="header-text">
+                <h3>Category Budget Meters</h3>
+                <p>Track spending limits and remaining balances per category</p>
+              </div>
+            </div>
+            <div id="hub-budget-meters-list" class="budget-meters-list">
+              <!-- Dynamically populated budget progress cards -->
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Category Spending Distribution Chart -->
+        <div class="hub-card" style="margin-top: 24px;">
+          <div class="hub-card-header">
+            <div class="header-text">
+              <h3>Spending Share by Category (Current Cycle)</h3>
+              <p>Visual representation of expenses incurred in each category</p>
+            </div>
+          </div>
+          <div class="chart-container-bar">
+            <canvas id="hub-chart-categories"></canvas>
+          </div>
+        </div>
+
       </section>
 
     </main>
 
-    <!-- Sticky Bottom Navigation -->
-    <nav>
-      <a class="nav-item" data-view="home">
-        <i data-lucide="home"></i>
-        <span>Dashboard</span>
-      </a>
-      <a class="nav-item active" data-view="add">
-        <i data-lucide="plus-circle"></i>
-        <span>Add</span>
-      </a>
-      <a class="nav-item" data-view="history">
-        <i data-lucide="history"></i>
-        <span>History</span>
-      </a>
-      <a class="nav-item" data-view="budgets">
-        <i data-lucide="pie-chart"></i>
-        <span>Budgets</span>
-      </a>
-      <a class="nav-item" data-view="settings">
-        <i data-lucide="settings"></i>
-        <span>Settings</span>
-      </a>
-    </nav>
-
-    <!-- Toast Notification Banner -->
-    <div id="toast" class="toast">
-      <span id="toast-message">Message text</span>
-      <button class="toast-close" onclick="document.getElementById('toast').classList.remove('show')">✕</button>
-    </div>
-
-    <!-- Budget Breakdown Drill-down Modal -->
+    <!-- Global Drill-down Modal (Identical full feature set) -->
     <div id="budget-modal" class="modal-overlay" onclick="if(event.target === this) closeBudgetModal()">
       <div class="modal-card">
         <div class="modal-header">
@@ -393,16 +388,20 @@
             <h4 class="modal-tx-title">Transactions (<span id="modal-budget-count">0</span>)</h4>
             <span id="modal-budget-subtotal" class="modal-tx-subtotal"></span>
           </div>
-          <div id="modal-budget-tx-list" class="modal-tx-list">
-            <!-- Dynamically populated transaction cards -->
-          </div>
+          <div id="modal-budget-tx-list" class="modal-tx-list"></div>
         </div>
       </div>
+    </div>
+
+    <!-- Toast Notification Banner -->
+    <div id="toast" class="toast">
+      <span id="toast-message">Message text</span>
+      <button class="toast-close" onclick="document.getElementById('toast').classList.remove('show')">✕</button>
     </div>
 
   </div>
 
   <!-- JavaScript Logic -->
-  <script src="app.js?v=4.1"></script>
+  <script src="preview.js?v=2.4"></script>
 </body>
 </html>

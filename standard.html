@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>FinFlow - Personal Finance Tracker (Standard App)</title>
+  
+  <!-- Premium Stylesheets -->
+  <link rel="stylesheet" href="style.css?v=4.2">
+  
+  <!-- Lucide Icons CDN for sleek vector graphics -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Chart.js CDN for beautiful dashboard visualizations -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+  <div class="app-container">
+    
+    <!-- Offline Banner -->
+    <div id="offline-banner" class="offline-banner">
+      Offline Mode - Syncing to local storage
+    </div>
+    
+    <!-- Header -->
+    <header>
+      <div class="brand">
+        <div class="brand-icon">F</div>
+        <div class="brand-title">
+          <h1>FinFlow</h1>
+          <p>Cash Flow Manager (Standard)</p>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <a href="index.html" class="preview-switch-badge" title="Open Finance Hub Pro Wealth Dashboard">
+          <i data-lucide="sparkles" style="width: 14px; height: 14px;"></i>
+          <span>Finance Hub Pro</span>
+        </a>
+        <div id="status-indicator" class="status-indicator disconnected" title="Sync Status"></div>
+      </div>
+    </header>
+
+    <!-- Main Content Panel -->
+    <main>
+      
+      <!-- 1. Home / Dashboard View -->
+      <section id="view-home" class="view">
+        <!-- Top Hero Grid: Balance Card + Quick Stats/Filter -->
+        <div class="dashboard-hero-grid">
+          <!-- Balance Card -->
+          <div class="balance-card">
+            <div class="balance-main-group">
+              <div class="label">Net Balance</div>
+              <div id="val-net-balance" class="value">RM 0.00</div>
+            </div>
+            
+            <div class="balance-grid">
+              <div class="balance-grid-item clickable-kpi" onclick="showInflowDetailsModal(getSalaryCycleRange())" title="Click to view all Inflow transactions & sub-tags">
+                <div class="mini-label" style="display: flex; align-items: center; justify-content: space-between;">Monthly Income <i data-lucide="chevron-right" style="width: 12px; height: 12px; opacity: 0.8;"></i></div>
+                <div id="val-monthly-income" class="mini-value">RM 0.00</div>
+              </div>
+              <div class="balance-grid-item clickable-kpi" onclick="showOutflowDetailsModal(getSalaryCycleRange())" title="Click to view all Outflow transactions & sub-tags">
+                <div class="mini-label" style="display: flex; align-items: center; justify-content: space-between;">Monthly Expenses <i data-lucide="chevron-right" style="width: 12px; height: 12px; opacity: 0.8;"></i></div>
+                <div id="val-monthly-expenses" class="mini-value">RM 0.00</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Hero Side: Savings, Investment & Date Filter -->
+          <div class="dashboard-hero-side">
+            <!-- Savings & Investment Row -->
+            <div class="secondary-metrics">
+              <div class="metric-pill savings clickable-kpi" onclick="showSavingsDetailsModal(getSalaryCycleRange())" title="Click to view deep-dive Savings transactions, categories & sub-tags">
+                <span class="pill-label" style="display: flex; align-items: center; justify-content: space-between;">Total Savings <i data-lucide="chevron-right" style="width: 12px; height: 12px; opacity: 0.8;"></i></span>
+                <span id="val-monthly-savings" class="pill-value">RM 0.00</span>
+              </div>
+              <div class="metric-pill investment clickable-kpi" onclick="showInvestmentDetailsModal(getSalaryCycleRange())" title="Click to view deep-dive Investment transactions, categories & sub-tags">
+                <span class="pill-label" style="display: flex; align-items: center; justify-content: space-between;">Total Invested <i data-lucide="chevron-right" style="width: 12px; height: 12px; opacity: 0.8;"></i></span>
+                <span id="val-monthly-investments" class="pill-value">RM 0.00</span>
+              </div>
+            </div>
+
+            <!-- Date Range Selector -->
+            <div class="chart-card date-filter-card">
+              <h3 style="font-size: 0.95rem; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                <i data-lucide="calendar" style="width: 18px; stroke-width: 2.2;"></i> Date Range Filter
+              </h3>
+              <div class="date-filter-grid">
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label for="dash-start-date" style="font-size: 0.75rem; font-weight: 700;">From</label>
+                  <input type="date" id="dash-start-date">
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label for="dash-end-date" style="font-size: 0.75rem; font-weight: 700;">To</label>
+                  <input type="date" id="dash-end-date">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dashboard Charts Grid (Side-by-side on wide screens) -->
+        <div class="charts-grid">
+          <!-- Expense Breakdown Chart Card -->
+          <div class="chart-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+              <div>
+                <h3>Expense Breakdown</h3>
+                <span id="lbl-expense-total" style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 600;">Total: RM 0.00</span>
+              </div>
+              <button id="btn-download-chart" class="mini-btn" title="Download Chart Image">
+                <i data-lucide="image"></i>
+              </button>
+            </div>
+            
+            <div class="chart-container-donut">
+              <canvas id="chart-expense-category"></canvas>
+            </div>
+          </div>
+
+          <!-- Cash Flow Trend Chart Card -->
+          <div class="chart-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+              <h3>6-Cycle Cash Flow Trend</h3>
+              <span class="badge">Salary Cycle</span>
+            </div>
+            <div class="chart-container-bar">
+              <canvas id="chart-cashflow-trend"></canvas>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. Add / Edit Transaction View -->
+      <section id="view-add" class="view active">
+        <div class="form-card">
+          <h2 id="form-title" style="margin-bottom: 20px;">Record Transaction</h2>
+          
+          <form id="form-transaction">
+            <!-- Hidden Edit ID -->
+            <input type="hidden" id="edit-tx-id">
+
+            <!-- Type Selector Segmented Control -->
+            <div class="form-group">
+              <label>Transaction Type</label>
+              <div class="segmented-control">
+                <button type="button" class="btn-segment active" data-type="Expense">Expense</button>
+                <button type="button" class="btn-segment" data-type="Income">Income</button>
+                <button type="button" class="btn-segment" data-type="Savings">Savings</button>
+                <button type="button" class="btn-segment" data-type="Investment">Investment</button>
+              </div>
+            </div>
+
+            <!-- Amount Input -->
+            <div class="form-group">
+              <label for="tx-amount">Amount (<span id="lbl-currency-symbol">RM</span>)</label>
+              <input type="number" id="tx-amount" step="0.01" placeholder="0.00" required>
+            </div>
+
+            <!-- Category Selector -->
+            <div class="form-group">
+              <label for="tx-category">Category</label>
+              <select id="tx-category" required>
+                <!-- Dynamically populated categories -->
+              </select>
+            </div>
+
+            <!-- Date Input -->
+            <div class="form-group">
+              <label for="tx-date">Date</label>
+              <input type="date" id="tx-date" required>
+            </div>
+
+            <!-- Tags Selector (Chips) -->
+            <div class="form-group">
+              <label>Tags (Multi-select)</label>
+              <div id="tag-chips-container" class="tag-chips-container">
+                <!-- Dynamically populated tag chips -->
+              </div>
+              
+              <!-- Add Custom Tag Field -->
+              <div class="add-tag-wrapper">
+                <input type="text" id="input-new-tag" placeholder="Create new tag..." maxlength="20">
+                <button type="button" id="btn-add-tag" class="btn-secondary">Add Tag</button>
+              </div>
+            </div>
+
+            <!-- Notes Field -->
+            <div class="form-group">
+              <label for="tx-notes">Notes / Remarks (Optional)</label>
+              <textarea id="tx-notes" rows="2" placeholder="e.g. Lunch with team, Groceries"></textarea>
+            </div>
+
+            <!-- Form Action Buttons -->
+            <div style="display: flex; gap: 12px; margin-top: 24px;">
+              <button type="submit" id="btn-submit-tx" class="btn-primary">
+                <i data-lucide="check-circle"></i> Save Transaction
+              </button>
+              <button type="button" id="btn-cancel-edit" class="btn-secondary" style="display: none;">
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <!-- 3. History / Ledger View -->
+      <section id="view-history" class="view">
+        <div class="chart-card">
+          <!-- Filters & Search Toolbar -->
+          <div class="history-toolbar">
+            <div class="search-box">
+              <i data-lucide="search"></i>
+              <input type="text" id="history-search" placeholder="Search notes, category, tags...">
+            </div>
+
+            <div class="history-filters">
+              <select id="filter-type">
+                <option value="ALL">All Types</option>
+                <option value="Expense">Expense</option>
+                <option value="Income">Income</option>
+                <option value="Savings">Savings</option>
+                <option value="Investment">Investment</option>
+              </select>
+
+              <select id="filter-category">
+                <option value="ALL">All Categories</option>
+                <!-- Populated dynamically -->
+              </select>
+
+              <select id="filter-tag">
+                <option value="ALL">All Tags</option>
+                <!-- Populated dynamically -->
+              </select>
+
+              <select id="filter-cycle">
+                <option value="ALL">All Dates</option>
+                <option value="CURRENT_CYCLE" selected>Current Salary Cycle</option>
+                <option value="PREV_CYCLE">Previous Salary Cycle</option>
+                <option value="THIS_YEAR">This Year</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Transaction Table (Desktop) / Cards (Mobile) -->
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Type</th>
+                  <th>Category</th>
+                  <th>Notes</th>
+                  <th>Tags</th>
+                  <th style="text-align: right;">Amount</th>
+                  <th style="text-align: center;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="history-table-body">
+                <!-- Populated dynamically -->
+              </tbody>
+            </table>
+          </div>
+
+          <div id="history-empty-state" class="empty-state" style="display: none;">
+            <p>No transactions found matching your filters.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. Budget Limits View -->
+      <section id="view-budgets" class="view">
+        <div class="form-card" style="margin-bottom: 24px;">
+          <h2 style="margin-bottom: 8px;">Category Budgets</h2>
+          <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 20px;">
+            Set monthly budget limits for your expense categories (Salary cycle: 25th to 24th).
+          </p>
+
+          <form id="form-budgets">
+            <div id="budget-inputs-grid" class="budget-inputs-grid">
+              <!-- Dynamically populated budget category fields -->
+            </div>
+
+            <button type="submit" class="btn-primary" style="margin-top: 20px;">
+              <i data-lucide="save"></i> Save Budgets
+            </button>
+          </form>
+        </div>
+
+        <!-- Budget Health Progress Bars -->
+        <div class="chart-card">
+          <h3 style="margin-bottom: 16px;">Current Salary Cycle Spending vs Budget</h3>
+          <div id="budget-progress-container" class="budget-progress-container">
+            <!-- Dynamically populated progress meters -->
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. Settings View -->
+      <section id="view-settings" class="view">
+        <div class="form-card" style="margin-bottom: 24px;">
+          <h2 style="margin-bottom: 20px;">App Settings</h2>
+
+          <form id="form-settings">
+            <!-- Google Apps Script URL -->
+            <div class="form-group">
+              <label for="settings-api-url">Google Apps Script Web App URL</label>
+              <input type="url" id="settings-api-url" placeholder="https://script.google.com/macros/s/.../exec">
+              <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 6px;">
+                Enter your deployed Google Apps Script URL to enable cloud synchronization with your Google Sheet.
+              </p>
+            </div>
+
+            <!-- Currency Symbol -->
+            <div class="form-group">
+              <label for="settings-currency">Currency Symbol</label>
+              <input type="text" id="settings-currency" value="RM" maxlength="5" style="max-width: 120px;">
+            </div>
+
+            <!-- Default Starting View Preference -->
+            <div class="form-group">
+              <label for="settings-default-view">Default App Mode</label>
+              <select id="settings-default-view">
+                <option value="standard" selected>Standard App (Fast Form)</option>
+                <option value="pro">Finance Hub Pro (Wealth Dashboard)</option>
+              </select>
+              <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 6px;">
+                Choose which view opens automatically when visiting FinFlow.
+              </p>
+            </div>
+
+            <button type="submit" id="btn-save-settings" class="btn-primary">
+              <i data-lucide="check"></i> Save Settings
+            </button>
+          </form>
+        </div>
+
+        <!-- Sync Actions -->
+        <div class="chart-card" style="margin-bottom: 20px;">
+          <h3 style="margin-bottom: 12px;">Data Management</h3>
+          <button id="btn-sync-now" class="btn-primary" style="background: var(--bg-tertiary); color: var(--text-primary); box-shadow: none; border: 1px solid var(--border); margin-bottom: 10px;">
+            <i data-lucide="refresh-cw"></i> Sync with Google Sheets
+          </button>
+          <button id="btn-clear-local" class="btn-primary" style="background: var(--expense-light); color: var(--expense); box-shadow: none; border: 1px solid var(--expense); font-size: 0.85rem; padding: 10px;">
+            <i data-lucide="trash-2"></i> Clear Local Cache & Reset
+          </button>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Sticky Bottom Navigation -->
+    <nav>
+      <a class="nav-item" data-view="home">
+        <i data-lucide="home"></i>
+        <span>Dashboard</span>
+      </a>
+      <a class="nav-item active" data-view="add">
+        <i data-lucide="plus-circle"></i>
+        <span>Add</span>
+      </a>
+      <a class="nav-item" data-view="history">
+        <i data-lucide="history"></i>
+        <span>History</span>
+      </a>
+      <a class="nav-item" data-view="budgets">
+        <i data-lucide="pie-chart"></i>
+        <span>Budgets</span>
+      </a>
+      <a class="nav-item" data-view="settings">
+        <i data-lucide="settings"></i>
+        <span>Settings</span>
+      </a>
+    </nav>
+
+    <!-- Toast Notification Banner -->
+    <div id="toast" class="toast">
+      <span id="toast-message">Message text</span>
+      <button class="toast-close" onclick="document.getElementById('toast').classList.remove('show')">✕</button>
+    </div>
+
+    <!-- Budget Breakdown Drill-down Modal -->
+    <div id="budget-modal" class="modal-overlay" onclick="if(event.target === this) closeBudgetModal()">
+      <div class="modal-card">
+        <div class="modal-header">
+          <div class="modal-title-group">
+            <h3 id="modal-budget-category">Category Expenses</h3>
+            <span id="modal-budget-cycle" class="modal-subtitle">Salary Cycle</span>
+          </div>
+          <button id="modal-budget-close" class="modal-close-btn" onclick="closeBudgetModal()">✕</button>
+        </div>
+
+        <div class="modal-summary-pills">
+          <div class="modal-pill spent">
+            <span class="pill-label">Spent</span>
+            <span id="modal-budget-spent" class="pill-value">RM 0.00</span>
+          </div>
+          <div class="modal-pill target">
+            <span class="pill-label">Budget</span>
+            <span id="modal-budget-limit" class="pill-value">RM 0.00</span>
+          </div>
+          <div class="modal-pill remaining">
+            <span class="pill-label">Remaining</span>
+            <span id="modal-budget-remaining" class="pill-value">RM 0.00</span>
+          </div>
+        </div>
+
+        <!-- 1. Category Filter Bar -->
+        <div id="modal-category-filter-section" class="modal-filter-section">
+          <div class="modal-filter-label">1. Filter by Category:</div>
+          <div id="modal-budget-category-pills" class="modal-filter-pills"></div>
+        </div>
+
+        <!-- 2. Tag Breakdown Filter Bar -->
+        <div id="modal-tags-filter-section" class="modal-filter-section">
+          <div class="modal-filter-label">2. Filter by Tag:</div>
+          <div id="modal-budget-tags-pills" class="modal-filter-pills"></div>
+        </div>
+
+        <div class="modal-tx-section">
+          <div class="modal-tx-header">
+            <h4 class="modal-tx-title">Transactions (<span id="modal-budget-count">0</span>)</h4>
+            <span id="modal-budget-subtotal" class="modal-tx-subtotal"></span>
+          </div>
+          <div id="modal-budget-tx-list" class="modal-tx-list">
+            <!-- Dynamically populated transaction cards -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- JavaScript Logic -->
+  <script src="app.js?v=4.2"></script>
+</body>
+</html>
