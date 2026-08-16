@@ -28,11 +28,11 @@
         <div class="brand-icon">F</div>
         <div class="brand-title">
           <h1>FinFlow</h1>
-          <p>Cash Flow Manager (Standard)</p>
+          <p>Cash Flow Manager</p>
         </div>
       </div>
       <div style="display: flex; align-items: center; gap: 12px;">
-        <a href="index.html" class="preview-switch-badge" title="Open Finance Hub Pro Wealth Dashboard">
+        <a href="index.html" class="preview-switch-badge" title="Open Finance Hub Professional Dashboard">
           <i data-lucide="sparkles" style="width: 14px; height: 14px;"></i>
           <span>Finance Hub Pro</span>
         </a>
@@ -88,244 +88,215 @@
               <div class="date-filter-grid">
                 <div class="form-group" style="margin-bottom: 0;">
                   <label for="dash-start-date" style="font-size: 0.75rem; font-weight: 700;">From</label>
-                  <input type="date" id="dash-start-date">
+                  <input type="date" id="dash-start-date" class="form-control" style="padding: 8px 12px; font-size: 0.85rem;">
                 </div>
                 <div class="form-group" style="margin-bottom: 0;">
                   <label for="dash-end-date" style="font-size: 0.75rem; font-weight: 700;">To</label>
-                  <input type="date" id="dash-end-date">
+                  <input type="date" id="dash-end-date" class="form-control" style="padding: 8px 12px; font-size: 0.85rem;">
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Dashboard Charts Grid (Side-by-side on wide screens) -->
-        <div class="charts-grid">
-          <!-- Expense Breakdown Chart Card -->
+        <!-- Charts Grid (2 columns on laptop) -->
+        <div class="dashboard-charts-grid">
+          <!-- Chart: Expense Breakdown -->
           <div class="chart-card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-              <div>
-                <h3>Expense Breakdown</h3>
-                <span id="lbl-expense-total" style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 600;">Total: RM 0.00</span>
+            <h3>
+              <span>Expense Distribution</span>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <span id="lbl-expense-total" style="font-size: 0.75rem; font-weight: 500; color: var(--text-muted); background-color: var(--bg-tertiary); padding: 2px 8px; border-radius: var(--radius-full);">Total: RM 0.00</span>
+                <button onclick="downloadChartImage()" class="tx-delete-btn" title="Download Chart Image" style="color: var(--primary); padding: 4px; display: flex; align-items: center;">
+                  <i data-lucide="image" style="width: 16px; height: 16px;"></i>
+                </button>
+                <button onclick="downloadChartCSV()" class="tx-delete-btn" title="Export CSV Data" style="color: var(--primary); padding: 4px; display: flex; align-items: center;">
+                  <i data-lucide="download" style="width: 16px; height: 16px;"></i>
+                </button>
               </div>
-              <button id="btn-download-chart" class="mini-btn" title="Download Chart Image">
-                <i data-lucide="image"></i>
-              </button>
-            </div>
-            
-            <div class="chart-container-donut">
-              <canvas id="chart-expense-category"></canvas>
+            </h3>
+            <div class="chart-wrapper">
+              <canvas id="chart-expenses-category"></canvas>
             </div>
           </div>
 
-          <!-- Cash Flow Trend Chart Card -->
+          <!-- Chart: Cash Flow Trend -->
           <div class="chart-card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-              <h3>6-Cycle Cash Flow Trend</h3>
-              <span class="badge">Salary Cycle</span>
-            </div>
-            <div class="chart-container-bar">
+            <h3>Cash Flow Trend <span>Salary Cycles</span></h3>
+            <div class="chart-wrapper">
               <canvas id="chart-cashflow-trend"></canvas>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- 2. Add / Edit Transaction View -->
+      <!-- 2. Add Transaction View -->
       <section id="view-add" class="view active">
-        <div class="form-card">
-          <h2 id="form-title" style="margin-bottom: 20px;">Record Transaction</h2>
-          
-          <form id="form-transaction">
-            <!-- Hidden Edit ID -->
-            <input type="hidden" id="edit-tx-id">
+        <h2 id="add-view-title" style="font-size: 1.25rem; font-weight: 700; margin-bottom: 20px;">New Transaction</h2>
+        
+        <form id="form-transaction" onsubmit="return false;">
+          <!-- Type Selector -->
+          <div class="form-group">
+            <label>Transaction Type</label>
+            <div class="type-selector">
+              <button type="button" class="type-btn active" data-type="Expense">Expense</button>
+              <button type="button" class="type-btn" data-type="Income">Income</button>
+              <button type="button" class="type-btn" data-type="Savings">Savings</button>
+              <button type="button" class="type-btn" data-type="Investment">Invest</button>
+            </div>
+          </div>
 
-            <!-- Type Selector Segmented Control -->
-            <div class="form-group">
-              <label>Transaction Type</label>
-              <div class="segmented-control">
-                <button type="button" class="btn-segment active" data-type="Expense">Expense</button>
-                <button type="button" class="btn-segment" data-type="Income">Income</button>
-                <button type="button" class="btn-segment" data-type="Savings">Savings</button>
-                <button type="button" class="btn-segment" data-type="Investment">Investment</button>
+          <!-- Date Input -->
+          <div class="form-group">
+            <label for="tx-date">Date</label>
+            <input type="date" id="tx-date" class="form-control" required>
+          </div>
+
+          <!-- Amount Input -->
+          <div class="form-group">
+            <label for="tx-amount">Amount</label>
+            <input type="number" id="tx-amount" class="form-control" placeholder="0.00" step="0.01" min="0.01" required>
+          </div>
+
+          <!-- Category Grid -->
+          <div class="form-group">
+            <label>Category</label>
+            <div class="category-select-wrapper">
+              <div id="category-grid" class="category-grid">
+                <!-- Dynamically rendered -->
               </div>
             </div>
+          </div>
 
-            <!-- Amount Input -->
-            <div class="form-group">
-              <label for="tx-amount">Amount (<span id="lbl-currency-symbol">RM</span>)</label>
-              <input type="number" id="tx-amount" step="0.01" placeholder="0.00" required>
-            </div>
+          <!-- Notes Input -->
+          <div class="form-group">
+            <label for="tx-notes">Notes (Optional)</label>
+            <textarea id="tx-notes" class="form-control" placeholder="Enter notes here..."></textarea>
+          </div>
 
-            <!-- Category Selector -->
-            <div class="form-group">
-              <label for="tx-category">Category</label>
-              <select id="tx-category" required>
-                <!-- Dynamically populated categories -->
+          <!-- Recurring Transaction Checkbox -->
+          <div class="form-group" style="flex-direction: row; align-items: center; gap: 8px; cursor: pointer; padding: 4px 0;">
+            <input type="checkbox" id="tx-is-recurring" style="width: 18px; height: 18px; accent-color: var(--primary);">
+            <label for="tx-is-recurring" style="font-weight: 700; cursor: pointer; margin-left: 0;">Is this a recurring bill?</label>
+          </div>
+
+          <!-- Recurring Details Panel -->
+          <div id="recurring-details-panel" style="display: none; background-color: var(--bg-tertiary); padding: 16px; border-radius: var(--radius-md); margin-bottom: 20px; border: 1px dashed var(--border-focus); flex-direction: column; gap: 12px; animation: fadeIn 0.3s ease;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="tx-recurring-freq">Frequency</label>
+              <select id="tx-recurring-freq" class="form-control" style="padding: 10px 14px;">
+                <option value="Monthly">Monthly</option>
+                <option value="Weekly">Weekly</option>
+                <option value="Yearly">Yearly</option>
               </select>
             </div>
-
-            <!-- Date Input -->
-            <div class="form-group">
-              <label for="tx-date">Date</label>
-              <input type="date" id="tx-date" required>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="tx-recurring-count">Duration (Times)</label>
+              <input type="number" id="tx-recurring-count" class="form-control" style="padding: 10px 14px;" value="6" min="2" max="24">
+              <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; line-height: 1.2;">
+                This will automatically generate multiple entries (e.g. 6 monthly bills) in your log.
+              </p>
             </div>
+          </div>
 
-            <!-- Tags Selector (Chips) -->
-            <div class="form-group">
-              <label>Tags (Multi-select)</label>
-              <div id="tag-chips-container" class="tag-chips-container">
-                <!-- Dynamically populated tag chips -->
+          <!-- Tags Selection -->
+          <div class="form-group">
+            <label>Tags (Select or Enter Custom)</label>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <div id="tag-choices" style="display: flex; flex-wrap: wrap; gap: 6px;">
+                <!-- Tags rendered as pills dynamically -->
               </div>
-              
-              <!-- Add Custom Tag Field -->
-              <div class="add-tag-wrapper">
-                <input type="text" id="input-new-tag" placeholder="Create new tag..." maxlength="20">
-                <button type="button" id="btn-add-tag" class="btn-secondary">Add Tag</button>
-              </div>
+              <input type="text" id="tx-custom-tag" class="form-control" placeholder="Add custom tag (press Enter)" style="padding: 8px 12px; font-size: 0.85rem;">
             </div>
+          </div>
 
-            <!-- Notes Field -->
-            <div class="form-group">
-              <label for="tx-notes">Notes / Remarks (Optional)</label>
-              <textarea id="tx-notes" rows="2" placeholder="e.g. Lunch with team, Groceries"></textarea>
-            </div>
-
-            <!-- Form Action Buttons -->
-            <div style="display: flex; gap: 12px; margin-top: 24px;">
-              <button type="submit" id="btn-submit-tx" class="btn-primary">
-                <i data-lucide="check-circle"></i> Save Transaction
-              </button>
-              <button type="button" id="btn-cancel-edit" class="btn-secondary" style="display: none;">
-                Cancel
-              </button>
-            </div>
-          </form>
-        </div>
+          <!-- Submit Button -->
+          <button type="submit" id="btn-save-transaction" class="btn-primary">
+            <i id="btn-save-tx-icon" data-lucide="plus-circle"></i> <span id="btn-save-tx-text">Save Transaction</span>
+          </button>
+        </form>
       </section>
 
-      <!-- 3. History / Ledger View -->
+      <!-- 3. History View -->
       <section id="view-history" class="view">
-        <div class="chart-card">
-          <!-- Filters & Search Toolbar -->
-          <div class="history-toolbar">
-            <div class="search-box">
-              <i data-lucide="search"></i>
-              <input type="text" id="history-search" placeholder="Search notes, category, tags...">
-            </div>
+        <h2 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 16px;">Transaction History</h2>
+        
+        <!-- Search and Filters -->
+        <div class="form-group" style="margin-bottom: 12px;">
+          <input type="text" id="history-search" class="form-control" placeholder="Search notes or categories...">
+        </div>
+        
+        <div class="filter-bar">
+          <button class="filter-btn active" data-filter="all">All</button>
+          <button class="filter-btn" data-filter="Expense">Expense</button>
+          <button class="filter-btn" data-filter="Income">Income</button>
+          <button class="filter-btn" data-filter="Savings">Savings</button>
+          <button class="filter-btn" data-filter="Investment">Invest</button>
+        </div>
 
-            <div class="history-filters">
-              <select id="filter-type">
-                <option value="ALL">All Types</option>
-                <option value="Expense">Expense</option>
-                <option value="Income">Income</option>
-                <option value="Savings">Savings</option>
-                <option value="Investment">Investment</option>
-              </select>
-
-              <select id="filter-category">
-                <option value="ALL">All Categories</option>
-                <!-- Populated dynamically -->
-              </select>
-
-              <select id="filter-tag">
-                <option value="ALL">All Tags</option>
-                <!-- Populated dynamically -->
-              </select>
-
-              <select id="filter-cycle">
-                <option value="ALL">All Dates</option>
-                <option value="CURRENT_CYCLE" selected>Current Salary Cycle</option>
-                <option value="PREV_CYCLE">Previous Salary Cycle</option>
-                <option value="THIS_YEAR">This Year</option>
-              </select>
-            </div>
-          </div>
-
-          <!-- Transaction Table (Desktop) / Cards (Mobile) -->
-          <div class="table-responsive">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Type</th>
-                  <th>Category</th>
-                  <th>Notes</th>
-                  <th>Tags</th>
-                  <th style="text-align: right;">Amount</th>
-                  <th style="text-align: center;">Actions</th>
-                </tr>
-              </thead>
-              <tbody id="history-table-body">
-                <!-- Populated dynamically -->
-              </tbody>
-            </table>
-          </div>
-
-          <div id="history-empty-state" class="empty-state" style="display: none;">
-            <p>No transactions found matching your filters.</p>
-          </div>
+        <!-- History List -->
+        <div id="history-list" class="transaction-list">
+          <!-- Transactions populated dynamically -->
         </div>
       </section>
 
-      <!-- 4. Budget Limits View -->
+      <!-- 4. Budgets View -->
       <section id="view-budgets" class="view">
-        <div class="form-card" style="margin-bottom: 24px;">
-          <h2 style="margin-bottom: 8px;">Category Budgets</h2>
-          <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 20px;">
-            Set monthly budget limits for your expense categories (Salary cycle: 25th to 24th).
-          </p>
+        <h2 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 20px;">Monthly Budgets</h2>
+        
+        <!-- Budget List -->
+        <div id="budget-progress-container" class="budget-list" style="margin-bottom: 24px;">
+          <!-- Dynamically populated budget bars -->
+        </div>
 
-          <form id="form-budgets">
-            <div id="budget-inputs-grid" class="budget-inputs-grid">
-              <!-- Dynamically populated budget category fields -->
+        <!-- Budget Configuration Panel -->
+        <div class="budget-editor-card">
+          <h3 style="font-size: 0.95rem; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+            <i data-lucide="sliders" style="width: 18px; stroke-width: 2;"></i> Configure Budgets
+          </h3>
+          <form id="form-budgets" onsubmit="return false;">
+            <div id="budget-inputs-grid" style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px;">
+              <!-- Dynamically populated inputs per expense category -->
             </div>
-
-            <button type="submit" class="btn-primary" style="margin-top: 20px;">
+            <button type="submit" id="btn-save-budgets" class="btn-primary">
               <i data-lucide="save"></i> Save Budgets
             </button>
           </form>
-        </div>
-
-        <!-- Budget Health Progress Bars -->
-        <div class="chart-card">
-          <h3 style="margin-bottom: 16px;">Current Salary Cycle Spending vs Budget</h3>
-          <div id="budget-progress-container" class="budget-progress-container">
-            <!-- Dynamically populated progress meters -->
-          </div>
         </div>
       </section>
 
       <!-- 5. Settings View -->
       <section id="view-settings" class="view">
-        <div class="form-card" style="margin-bottom: 24px;">
-          <h2 style="margin-bottom: 20px;">App Settings</h2>
-
-          <form id="form-settings">
-            <!-- Google Apps Script URL -->
+        <h2 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 20px;">Settings</h2>
+        
+        <div class="chart-card" style="margin-bottom: 20px;">
+          <h3 style="margin-bottom: 12px;">App Configuration</h3>
+          
+          <form id="form-settings" onsubmit="return false;">
+            <!-- Apps Script Web App URL -->
             <div class="form-group">
-              <label for="settings-api-url">Google Apps Script Web App URL</label>
-              <input type="url" id="settings-api-url" placeholder="https://script.google.com/macros/s/.../exec">
-              <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 6px;">
-                Enter your deployed Google Apps Script URL to enable cloud synchronization with your Google Sheet.
+              <label for="settings-api-url">Google Apps Script URL</label>
+              <input type="url" id="settings-api-url" class="form-control" placeholder="https://script.google.com/macros/s/.../exec">
+              <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; line-height: 1.3;">
+                Create a spreadsheet, paste the backend code in Extensions -> Apps Script, deploy it as a Web App, and paste the URL here.
               </p>
             </div>
 
             <!-- Currency Symbol -->
             <div class="form-group">
               <label for="settings-currency">Currency Symbol</label>
-              <input type="text" id="settings-currency" value="RM" maxlength="5" style="max-width: 120px;">
+              <input type="text" id="settings-currency" class="form-control" value="RM" maxlength="5">
             </div>
 
-            <!-- Default Starting View Preference -->
+            <!-- Default Dashboard Style -->
             <div class="form-group">
-              <label for="settings-default-view">Default App Mode</label>
-              <select id="settings-default-view">
-                <option value="standard" selected>Standard App (Fast Form)</option>
-                <option value="pro">Finance Hub Pro (Wealth Dashboard)</option>
+              <label for="settings-default-view">Default Dashboard Style</label>
+              <select id="settings-default-view" class="form-control">
+                <option value="standard">Standard FinFlow (Pastel Mobile & Desktop)</option>
+                <option value="financehub">Finance Hub Pro (Dark Wealth & Analytics Dashboard)</option>
               </select>
-              <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 6px;">
-                Choose which view opens automatically when visiting FinFlow.
+              <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; line-height: 1.3;">
+                Choose which dashboard automatically opens when you visit FinFlow. You can switch between them anytime using the switcher button.
               </p>
             </div>
 
