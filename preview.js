@@ -182,9 +182,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Cycle label
   const activeCycle = getSalaryCycleRange();
-  document.getElementById("hub-cycle-label").textContent = `Salary Cycle: ${formatReadableDate(
-    activeCycle.startDate
-  )} - ${formatReadableDate(activeCycle.endDate)}`;
+  const cycleLabelEl = document.getElementById("hub-cycle-label");
+  if (cycleLabelEl) {
+    cycleLabelEl.textContent = `Cycle: ${formatReadableDate(
+      activeCycle.startDate
+    )} - ${formatReadableDate(activeCycle.endDate)}`;
+  }
 
   // Initial render
   updateHubUI();
